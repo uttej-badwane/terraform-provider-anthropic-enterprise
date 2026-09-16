@@ -1,4 +1,4 @@
-## Unreleased
+## v0.3.0 (2026-09-16)
 
 ENHANCEMENTS:
 
@@ -22,6 +22,16 @@ CHORE:
   current release. The suite already supported it through
   `TF_ACC_PROVIDER_HOST` and `TF_ACC_TERRAFORM_PATH`; nothing exercised it, which
   is how the inaccurate floor above went unnoticed ([#6](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/6))
+
+DOCUMENTATION:
+
+* **New Guide:** Managed Agents — builds an environment, vault, credential,
+  skill, agent and scheduled deployment, and explains the behaviours that
+  differ from the rest of the provider: agent versioning and how deployments
+  pin to it, why `tools` is compared as a JSON subset, write-only vault secrets
+  and `secret_version` rotation, local content hashing for skills, and which
+  objects archive rather than delete ([#9](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/9))
+
 
 ## v0.2.0 (2026-09-16)
 
