@@ -20,10 +20,10 @@ func writeSkillDir(t *testing.T, root, extra string) string {
 		t.Fatal(err)
 	}
 	skill := "---\nname: example-skill\ndescription: Formats release notes from a changelog.\n---\n# Example skill\n"
-	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte(skill), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte(skill), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "template.md"), []byte(extra), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "template.md"), []byte(extra), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	return dir
@@ -87,7 +87,7 @@ func TestAccSkillResource_missingSkillMD(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("no frontmatter"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("no frontmatter"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	resource.Test(t, resource.TestCase{

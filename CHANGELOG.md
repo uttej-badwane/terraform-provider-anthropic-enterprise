@@ -1,6 +1,35 @@
 ## Unreleased
 
+SECURITY:
+
+* Build releases from the reviewed module graph. The goreleaser `before` hook
+  ran `go mod tidy`, which could rewrite `go.mod` and `go.sum` inside the
+  release job so the signed binaries compiled a different dependency set than
+  the one in the tagged commit. It now runs `go mod download` and
+  `go mod verify`, which fail instead
+* Attach SLSA build provenance to every release archive and to the checksum
+  file (`actions/attest-build-provenance`), and an SPDX SBOM per archive.
+  Verify a download with
+  `gh attestation verify <file> --repo uttej-badwane/terraform-provider-anthropic-enterprise`
+* Run the release job in a `release` environment so a protection rule can gate
+  access to the signing key, drop the checkout token from `.git/config` before
+  third-party steps run, and scope `contents: write` to the one job that needs it
+* Enable `gosec` and `bodyclose` in the linter, add a CodeQL workflow and an
+  OpenSSF Scorecard workflow, and pin `golangci-lint` and `govulncheck` to
+  exact versions instead of `latest`
+* Ignore `*.tfstate` and `*.tfvars` everywhere. The previous `./*.tfstate`
+  pattern never matched anything, so a state file, and with it any key an
+  example configuration had read, could be committed
+
 CHORE:
+
+* Run the client and mock unit tests in CI. The acceptance matrix only covered
+  `./internal/provider`, so `make test` and CI disagreed about what was tested
+* Cancel a superseded run of the test workflow and run on pushes to `main`
+  only, instead of once for the branch push and once for the pull request
+* Add `make tools` (installs the pinned linters) and `make vulncheck`
+* Bring the `tools/` module's `golang.org/x/*` dependencies level with the
+  provider's
 
 * Record the conventions and the traps that have actually cost time in
   `CONTRIBUTING.md` — generated docs versus templates, error-expecting tests,
