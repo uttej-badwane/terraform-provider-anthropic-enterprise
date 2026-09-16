@@ -1,0 +1,2 @@
+# Import id is workspace_id/user_id
+terraform import anthropic_workspace_member.jane_production wrkspc_01ExampleWorkspaceId000000/user_01ExampleUserId0000000000

@@ -1,0 +1,1 @@
+terraform import anthropic_environment.ci env_01ExampleEnvId000000000000

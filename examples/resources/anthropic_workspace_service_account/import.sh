@@ -1,0 +1,1 @@
+terraform import anthropic_workspace_service_account.ci_deploy_production wrkspc_01ExampleWorkspaceId000000/svac_01ExampleServiceAcct000000

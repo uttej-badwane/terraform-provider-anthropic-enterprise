@@ -1,0 +1,1 @@
+terraform import anthropic_skill.release_notes skill_01ExampleSkillId000000000

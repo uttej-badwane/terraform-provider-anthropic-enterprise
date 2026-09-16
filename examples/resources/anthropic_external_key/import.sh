@@ -1,0 +1,1 @@
+terraform import anthropic_external_key.production ekey_01ExampleKeyId00000000000

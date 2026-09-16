@@ -1,0 +1,2 @@
+# group_id/user_id
+terraform import anthropic_rbac_group_member.alice rbac_group_01ExampleGroupId00000000/user_01ExampleUserId0000000000

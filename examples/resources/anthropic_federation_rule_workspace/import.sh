@@ -1,0 +1,1 @@
+terraform import anthropic_federation_rule_workspace.deploy_main_staging fdrl_01ExampleRuleId0000000000/wrkspc_01ExampleWorkspaceId000000

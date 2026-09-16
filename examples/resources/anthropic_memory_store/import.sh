@@ -1,0 +1,1 @@
+terraform import anthropic_memory_store.shared_notes memstore_01ExampleStoreId0000000

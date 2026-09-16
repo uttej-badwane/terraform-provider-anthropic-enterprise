@@ -1,0 +1,1 @@
+terraform import anthropic_vault.ci vlt_01ExampleVaultId000000000

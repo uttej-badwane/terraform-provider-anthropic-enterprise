@@ -1,0 +1,1 @@
+terraform import anthropic_invite.jane invite_01ExampleInviteId00000000
