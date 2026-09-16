@@ -16,7 +16,7 @@ import (
 // Credentials accepted by the mock.
 const (
 	AdminKey      = "sk-ant-admin-test-0000"
-	OAuthToken    = "test-org-admin-oauth-token"
+	OAuthToken    = "test-org-admin-oauth-token" //nolint:gosec // fixture accepted only by this mock
 	EnterpriseKey = "sk-ant-api01-enterprise-test-0000"
 )
 

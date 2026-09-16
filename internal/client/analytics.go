@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 )
@@ -131,9 +132,14 @@ type analyticsEnvelope[T any] struct {
 }
 
 func analyticsReport[T any](ctx context.Context, c *Client, path string, q url.Values) (*AnalyticsReport[T], error) {
+	q = cloneValues(q)
 	q.Set("limit", strconv.Itoa(listPageSize))
 	out := &AnalyticsReport[T]{}
-	for {
+	prev := ""
+	for n := 0; n < maxListPages; n++ {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		var page analyticsEnvelope[T]
 		if err := c.get(ctx, CredAnalytics, path, q, &page); err != nil {
 			return nil, err
@@ -148,8 +154,13 @@ func analyticsReport[T any](ctx context.Context, c *Client, path string, q url.V
 		if page.NextPage == nil || *page.NextPage == "" {
 			return out, nil
 		}
-		q.Set("page", *page.NextPage)
+		if *page.NextPage == prev {
+			return nil, fmt.Errorf("GET %s: %w", path, errCursorStuck)
+		}
+		prev = *page.NextPage
+		q.Set("page", prev)
 	}
+	return nil, fmt.Errorf("GET %s: more than %d pages", path, maxListPages)
 }
 
 // GetAnalyticsUsageReport returns Enterprise token usage over time.

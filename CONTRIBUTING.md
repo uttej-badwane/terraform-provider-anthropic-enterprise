@@ -25,9 +25,10 @@ Before opening the pull request:
   names appear anywhere in the diff. Examples use placeholders
   (`wrkspc_...`, `user_...`, `example.com`).
 
-The pull request template lists the same checks. CI runs the build, the linter,
-a vulnerability scan, documentation generation and the acceptance suite against
-the mock on three Terraform versions; all of it must pass before merge.
+The pull request template lists the same checks. CI runs the build, the unit tests, the
+linter, a vulnerability scan, CodeQL, documentation generation and the acceptance
+suite against the mock on three Terraform and two OpenTofu versions; all of it
+must pass before merge.
 
 ## Where to start
 
@@ -45,11 +46,13 @@ the mock on three Terraform versions; all of it must pass before merge.
 The local checkout can live in any directory. Only the GitHub repository name matters: the Terraform Registry requires it to be `terraform-provider-anthropic-enterprise`, and the Go module path and goreleaser `project_name` already reflect that. Resource types keep the `anthropic_` prefix, so configurations declare the provider with the local name `anthropic`.
 
 ```sh
+make tools        # install golangci-lint and govulncheck at the versions CI uses
 make build        # compile
 make test         # unit tests (client + mock)
 make testacc      # acceptance tests against the in-process mock Admin API
 make generate     # regenerate docs/ from schemas + examples/
 make lint         # golangci-lint
+make vulncheck    # govulncheck, the same scan the pull request runs
 ```
 
 Run the provider from source against a Terraform configuration:

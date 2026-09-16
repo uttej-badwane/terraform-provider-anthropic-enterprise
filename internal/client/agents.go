@@ -28,7 +28,7 @@ func (c *Client) ListAgents(ctx context.Context, includeArchived bool) ([]Agent,
 // CreateAgent creates an agent (version 1).
 func (c *Client) CreateAgent(ctx context.Context, in AgentCreate) (*Agent, error) {
 	var out Agent
-	if err := c.post(ctx, CredAPIKey, "/v1/agents", in, &out, betaAgents); err != nil {
+	if err := c.create(ctx, CredAPIKey, "/v1/agents", in, &out, betaAgents); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -76,7 +76,7 @@ func (c *Client) ListEnvironments(ctx context.Context, includeArchived bool) ([]
 // CreateEnvironment creates an environment.
 func (c *Client) CreateEnvironment(ctx context.Context, in EnvironmentCreate) (*Environment, error) {
 	var out Environment
-	if err := c.post(ctx, CredAPIKey, "/v1/environments", in, &out, betaAgents); err != nil {
+	if err := c.create(ctx, CredAPIKey, "/v1/environments", in, &out, betaAgents); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -124,7 +124,7 @@ func (c *Client) ListVaults(ctx context.Context, includeArchived bool) ([]Vault,
 // CreateVault creates a vault.
 func (c *Client) CreateVault(ctx context.Context, in VaultCreate) (*Vault, error) {
 	var out Vault
-	if err := c.post(ctx, CredAPIKey, "/v1/vaults", in, &out, betaAgents); err != nil {
+	if err := c.create(ctx, CredAPIKey, "/v1/vaults", in, &out, betaAgents); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -174,7 +174,7 @@ func (c *Client) ListVaultCredentials(ctx context.Context, vaultID string, inclu
 // CreateVaultCredential stores a credential.
 func (c *Client) CreateVaultCredential(ctx context.Context, vaultID string, in VaultCredentialCreate) (*VaultCredential, error) {
 	var out VaultCredential
-	if err := c.post(ctx, CredAPIKey, "/v1/vaults/"+url.PathEscape(vaultID)+"/credentials", in, &out, betaAgents); err != nil {
+	if err := c.create(ctx, CredAPIKey, "/v1/vaults/"+url.PathEscape(vaultID)+"/credentials", in, &out, betaAgents); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -236,7 +236,7 @@ func (c *Client) ListDeployments(ctx context.Context, opts DeploymentListOptions
 // CreateDeployment creates a deployment.
 func (c *Client) CreateDeployment(ctx context.Context, in DeploymentCreate) (*Deployment, error) {
 	var out Deployment
-	if err := c.post(ctx, CredAPIKey, "/v1/deployments", in, &out, betaAgents); err != nil {
+	if err := c.create(ctx, CredAPIKey, "/v1/deployments", in, &out, betaAgents); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -297,7 +297,7 @@ func (c *Client) ListMemoryStores(ctx context.Context, includeArchived bool) ([]
 // CreateMemoryStore creates a memory store.
 func (c *Client) CreateMemoryStore(ctx context.Context, in MemoryStoreCreate) (*MemoryStore, error) {
 	var out MemoryStore
-	if err := c.post(ctx, CredAPIKey, "/v1/memory_stores", in, &out, betaMemory); err != nil {
+	if err := c.create(ctx, CredAPIKey, "/v1/memory_stores", in, &out, betaMemory); err != nil {
 		return nil, err
 	}
 	return &out, nil

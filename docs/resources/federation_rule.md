@@ -50,7 +50,7 @@ resource "anthropic_federation_rule" "deploy_main" {
 ### Optional
 
 - `applies_to_all_workspaces` (Boolean) Enable the rule for every workspace. Defaults to `false`, in which case `workspace_id` is required.
-- `archive_on_destroy` (Boolean) Archive the rule when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state.
+- `archive_on_destroy` (Boolean) Archive the rule when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `description` (String) Free-text description. Removing it clears the description.
 - `token_lifetime_seconds` (Number) Lifetime of minted tokens in seconds (60 to 86400). Defaults to `3600`.
 - `workspace_id` (String) Workspace (`wrkspc_...`) the rule is enabled for. Required unless `applies_to_all_workspaces` is `true`.

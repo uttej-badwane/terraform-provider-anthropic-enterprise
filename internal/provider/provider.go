@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
@@ -55,8 +58,13 @@ func (p *AnthropicProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 			"Three credential classes exist. Each resource documents which one it needs.",
 		Attributes: map[string]schema.Attribute{
 			"base_url": schema.StringAttribute{
-				MarkdownDescription: "API base URL. Defaults to `https://api.anthropic.com`. Can also be set with `ANTHROPIC_BASE_URL`.",
-				Optional:            true,
+				MarkdownDescription: "API base URL. Defaults to `https://api.anthropic.com`. Must use `https`; `http` is accepted only for " +
+					"loopback addresses such as the bundled mock server. Credentials embedded in the URL are rejected. " +
+					"Can also be set with `ANTHROPIC_BASE_URL`.",
+				Optional: true,
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(regexp.MustCompile(`^https?://[^@/]+(/.*)?$`), "must be an absolute http(s) URL without embedded credentials"),
+				},
 			},
 			"admin_api_key": schema.StringAttribute{
 				MarkdownDescription: "Admin API key (`sk-ant-admin...`) created in the Claude Console. Reaches Console-organization " +
@@ -110,7 +118,7 @@ func (p *AnthropicProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 
 // credentialMismatchSummary heads the diagnostic raised when a credential
 // belongs to a different class than the attribute holding it.
-const credentialMismatchSummary = "Credential of the wrong class"
+const credentialMismatchSummary = "Credential of the wrong class" //nolint:gosec // diagnostic title, not a credential
 
 // credentialMismatch describes one credential attribute and a key prefix that
 // certainly belongs to a different class.
@@ -211,7 +219,15 @@ func (p *AnthropicProvider) Configure(ctx context.Context, req provider.Configur
 		return
 	}
 
-	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "admin_api_key", "oauth_token", "enterprise_api_key", "compliance_api_key", "analytics_api_key", "api_key")
+	// Redact the credential values themselves from anything logged with
+	// this context, wherever they appear. Each request context is masked
+	// again by the client, since resource contexts do not derive from here.
+	for _, s := range []string{admin, oauth, enterprise, compliance, analytics, apiKey} {
+		if s != "" {
+			ctx = tflog.MaskAllFieldValuesStrings(ctx, s)
+			ctx = tflog.MaskMessageStrings(ctx, s)
+		}
+	}
 
 	c, err := client.New(client.Config{
 		BaseURL:          baseURL,

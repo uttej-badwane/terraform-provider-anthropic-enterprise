@@ -126,7 +126,7 @@ func (r *vaultCredentialResource) Schema(_ context.Context, _ resource.SchemaReq
 				Optional:            true,
 			},
 			"delete_on_destroy": schema.BoolAttribute{
-				MarkdownDescription: "Hard-delete on destroy (default `true`). `false` archives the credential and purges its secret instead.",
+				MarkdownDescription: "Hard-delete on destroy (default `true`). `false` archives the credential and purges its secret instead. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.",
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
@@ -135,7 +135,8 @@ func (r *vaultCredentialResource) Schema(_ context.Context, _ resource.SchemaReq
 				MarkdownDescription: "A fixed bearer token presented to one MCP server.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
-					"mcp_server_url": schema.StringAttribute{MarkdownDescription: "MCP server URL the token is sent to. Immutable.", Required: true,
+					"mcp_server_url": schema.StringAttribute{MarkdownDescription: "MCP server URL the token is sent to. Must use `https://`. Immutable.", Required: true,
+						Validators:    []validator.String{httpsURL()},
 						PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
 					"token": writeOnlySecret("Bearer token (1 to 8192 characters).", true),
 				},
@@ -157,7 +158,8 @@ func (r *vaultCredentialResource) Schema(_ context.Context, _ resource.SchemaReq
 				MarkdownDescription: "An OAuth access token (optionally refreshable) for one MCP server.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
-					"mcp_server_url": schema.StringAttribute{MarkdownDescription: "MCP server URL. Immutable.", Required: true,
+					"mcp_server_url": schema.StringAttribute{MarkdownDescription: "MCP server URL the access token is sent to. Must use `https://`. Immutable.", Required: true,
+						Validators:    []validator.String{httpsURL()},
 						PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
 					"access_token": writeOnlySecret("OAuth access token.", true),
 					"expires_at":   schema.StringAttribute{MarkdownDescription: "Access token expiry (RFC 3339).", Optional: true},
@@ -165,7 +167,8 @@ func (r *vaultCredentialResource) Schema(_ context.Context, _ resource.SchemaReq
 						MarkdownDescription: "Refresh configuration; when set the platform refreshes the access token itself.",
 						Optional:            true,
 						Attributes: map[string]schema.Attribute{
-							"token_endpoint": schema.StringAttribute{MarkdownDescription: "OAuth token endpoint. Immutable.", Required: true,
+							"token_endpoint": schema.StringAttribute{MarkdownDescription: "OAuth token endpoint the refresh token is sent to. Must use `https://`. Immutable.", Required: true,
+								Validators:    []validator.String{httpsURL()},
 								PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
 							"client_id": schema.StringAttribute{MarkdownDescription: "OAuth client id. Immutable.", Required: true,
 								PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
@@ -459,5 +462,5 @@ func (r *vaultCredentialResource) ImportState(ctx context.Context, req resource.
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("vault_id"), types.StringValue(parts[0]))...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), types.StringValue(parts[1]))...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("delete_on_destroy"), types.BoolValue(true))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("delete_on_destroy"), types.BoolValue(false))...)
 }

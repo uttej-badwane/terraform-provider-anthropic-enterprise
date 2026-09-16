@@ -28,6 +28,7 @@ var (
 	_ resource.Resource                = &complianceSettingsResource{}
 	_ resource.ResourceWithConfigure   = &complianceSettingsResource{}
 	_ resource.ResourceWithImportState = &complianceSettingsResource{}
+	_ resource.ResourceWithModifyPlan  = &complianceSettingsResource{}
 )
 
 // NewComplianceSettingsResource returns the anthropic_compliance_settings resource.
@@ -109,6 +110,30 @@ func (r *complianceSettingsResource) Update(ctx context.Context, req resource.Up
 		return
 	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, complianceSettingsModel{ID: types.StringValue(complianceSettingsID), State: types.StringValue(cs.State.Type)})...)
+}
+
+// ModifyPlan warns when a plan turns the Compliance API off. The change is
+// legal, but it stops audit-log export for the whole organization, and a
+// plan that does it should say so where a reviewer will read it.
+func (r *complianceSettingsResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+	var planned types.String
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("state"), &planned)...)
+	if planned.IsUnknown() || planned.ValueString() != "disabled" {
+		return
+	}
+	var prior types.String
+	if !req.State.Raw.IsNull() {
+		resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("state"), &prior)...)
+		if prior.ValueString() == "disabled" {
+			return
+		}
+	}
+	resp.Diagnostics.AddAttributeWarning(path.Root("state"), "Compliance API will be disabled",
+		"This plan sets the organization-wide Compliance API to `disabled`. Audit-log export and every "+
+			"`anthropic_compliance_*` data source stop working for the whole organization until it is enabled again.")
 }
 
 func (r *complianceSettingsResource) Delete(context.Context, resource.DeleteRequest, *resource.DeleteResponse) {

@@ -36,7 +36,7 @@ resource "anthropic_vault" "ci" {
 
 ### Optional
 
-- `delete_on_destroy` (Boolean) Hard-delete on destroy (default `true`). `false` archives the vault instead.
+- `delete_on_destroy` (Boolean) Hard-delete on destroy (default `true`). `false` archives the vault instead. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `metadata` (Map of String) Key/value metadata (up to 16 pairs).
 
 ### Read-Only

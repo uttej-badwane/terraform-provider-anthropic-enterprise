@@ -107,7 +107,7 @@ func (r *skillResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"delete_on_destroy": schema.BoolAttribute{
-				MarkdownDescription: "Delete the skill (all versions) on destroy. Defaults to `true`.",
+				MarkdownDescription: "Delete the skill (all versions) on destroy. Defaults to `true`. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.",
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
@@ -151,7 +151,10 @@ func (r *skillResource) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 }
 
 // readSkillDir loads every regular file under dir (relative paths prefixed
-// with the directory basename) and returns a stable content hash.
+// with the directory basename) and returns a stable content hash. The
+// directory is opened as an os.Root, so a symlink that points outside it is
+// refused rather than followed, and non-regular entries are skipped. The size
+// and count limits are enforced while walking, before the tree is in memory.
 func readSkillDir(dir string) ([]client.SkillFile, string, error) {
 	info, err := os.Stat(dir)
 	if err != nil {
@@ -160,36 +163,47 @@ func readSkillDir(dir string) ([]client.SkillFile, string, error) {
 	if !info.IsDir() {
 		return nil, "", fmt.Errorf("%s is not a directory", dir)
 	}
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		return nil, "", err
+	}
+	defer root.Close()
+	rootFS := root.FS()
 	top := filepath.Base(filepath.Clean(dir))
 	var files []client.SkillFile
 	var total int64
 	hasSkillMD := false
-	err = filepath.WalkDir(dir, func(p string, d fs.DirEntry, walkErr error) error {
+	err = fs.WalkDir(rootFS, ".", func(p string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
 		if d.IsDir() {
-			if strings.HasPrefix(d.Name(), ".") && p != dir {
-				return filepath.SkipDir
+			if strings.HasPrefix(d.Name(), ".") && p != "." {
+				return fs.SkipDir
 			}
 			return nil
 		}
-		if strings.HasPrefix(d.Name(), ".") {
+		if strings.HasPrefix(d.Name(), ".") || !d.Type().IsRegular() {
 			return nil
 		}
-		rel, err := filepath.Rel(dir, p)
+		if len(files) >= skillMaxFiles {
+			return fmt.Errorf("skill has more than %d files; the API accepts at most %d", skillMaxFiles, skillMaxFiles)
+		}
+		fi, err := d.Info()
 		if err != nil {
 			return err
 		}
-		data, err := os.ReadFile(p)
+		if total += fi.Size(); total > skillMaxBytes {
+			return fmt.Errorf("skill exceeds %d bytes; the API accepts at most %d", skillMaxBytes, skillMaxBytes)
+		}
+		data, err := fs.ReadFile(rootFS, p)
 		if err != nil {
 			return err
 		}
-		total += int64(len(data))
-		if rel == "SKILL.md" {
+		if p == "SKILL.md" {
 			hasSkillMD = true
 		}
-		files = append(files, client.SkillFile{Path: top + "/" + filepath.ToSlash(rel), Data: data})
+		files = append(files, client.SkillFile{Path: top + "/" + p, Data: data})
 		return nil
 	})
 	if err != nil {
@@ -197,12 +211,6 @@ func readSkillDir(dir string) ([]client.SkillFile, string, error) {
 	}
 	if !hasSkillMD {
 		return nil, "", fmt.Errorf("%s must contain SKILL.md at its root", dir)
-	}
-	if len(files) > skillMaxFiles {
-		return nil, "", fmt.Errorf("skill has %d files; the API accepts at most %d", len(files), skillMaxFiles)
-	}
-	if total > skillMaxBytes {
-		return nil, "", fmt.Errorf("skill is %d bytes; the API accepts at most %d", total, skillMaxBytes)
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].Path < files[j].Path })
 	h := sha256.New()
@@ -301,7 +309,7 @@ func (r *skillResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 func (r *skillResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("delete_on_destroy"), types.BoolValue(true))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("delete_on_destroy"), types.BoolValue(false))...)
 }
 
 func (r *skillResource) flatten(ctx context.Context, sk *client.Skill, m *skillModel) (diags diagList) {

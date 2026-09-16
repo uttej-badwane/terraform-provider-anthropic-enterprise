@@ -3,7 +3,21 @@ NAMESPACE := uttej-badwane
 GOBIN ?= $(shell go env GOPATH)/bin
 DEV_TFRC := $(CURDIR)/dev.tfrc
 
+# Pinned tool versions. CI uses the same ones (.github/workflows/test.yml), so
+# `make lint` and `make vulncheck` here match what a pull request is held to.
+GOLANGCI_LINT_VERSION := v2.13.2
+GOVULNCHECK_VERSION := v1.8.0
+
 default: fmt lint install generate
+
+# Install the linters at the versions CI runs.
+tools:
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	go install golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION)
+
+# Report vulnerabilities in dependencies that this code can actually reach.
+vulncheck:
+	go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
 
 build:
 	go build -v ./...
@@ -56,4 +70,4 @@ docs-validate:
 snapshot:
 	goreleaser release --snapshot --clean --skip=sign
 
-.PHONY: default build install lint generate fmt test testacc testacc-live testacc-live-write dev-override publish-check docs-validate snapshot
+.PHONY: default tools vulncheck build install lint generate fmt test testacc testacc-live testacc-live-write dev-override publish-check docs-validate snapshot

@@ -1,5 +1,83 @@
 ## Unreleased
 
+SECURITY:
+
+* Refuse HTTP redirects instead of following them. Go's HTTP client strips only
+  `Authorization` and `Cookie` when a redirect changes host, so a redirect from
+  the configured `base_url` would have replayed `X-Api-Key` (five of the six
+  credential classes) on whatever host the redirect named. A 3xx now surfaces
+  as an API error
+* Validate `base_url`: the scheme must be `https`, with `http` accepted only for
+  loopback addresses so the bundled mock server keeps working, and a URL with
+  embedded credentials is rejected. The error text never repeats the value.
+  Previously any parseable URL was accepted, including `http://` to a remote
+  host, which sent the Admin key in cleartext
+* Stop echoing non-JSON error bodies into diagnostics. A 5xx page from a proxy
+  or gateway in front of the API is now logged at debug level only; the API's
+  own error envelope is still surfaced verbatim
+* Mask every configured credential by value in provider logs. The previous
+  field-key masking never matched a logged field and did not reach request
+  contexts
+* Require `https://` on every attribute that decides where a token or a signing
+  key goes: `anthropic_federation_issuer.jwks.url` and `jwks.discovery_base`
+  (where JWT signing keys are fetched from), `anthropic_vault_credential`
+  `static_bearer.mcp_server_url`, `mcp_oauth.mcp_server_url` and
+  `mcp_oauth.refresh.token_endpoint` (where the bearer, access and refresh
+  tokens are sent), and `anthropic_deployment.github_repositories[].url` (where
+  the clone token is sent). `issuer_url` already had the check; the siblings
+  did not, so a cleartext URL was accepted and the platform would have
+  delivered the secret to it
+* `anthropic_skill` no longer follows symlinks inside `source_dir`. A link to a
+  file outside the skill directory would have been read and uploaded under the
+  link's name. The file-count and size limits are now enforced during the walk
+  rather than after the whole tree is in memory
+* Build releases from the reviewed module graph. The goreleaser `before` hook
+  ran `go mod tidy`, which could rewrite `go.mod` and `go.sum` inside the
+  release job so the signed binaries compiled a different dependency set than
+  the one in the tagged commit. It now runs `go mod download` and
+  `go mod verify`, which fail instead
+* Attach SLSA build provenance to every release archive and to the checksum
+  file (`actions/attest-build-provenance`), and an SPDX SBOM per archive.
+  Verify a download with
+  `gh attestation verify <file> --repo uttej-badwane/terraform-provider-anthropic-enterprise`
+* Run the release job in a `release` environment so a protection rule can gate
+  access to the signing key, drop the checkout token from `.git/config` before
+  third-party steps run, and scope `contents: write` to the one job that needs it
+* Enable `gosec` and `bodyclose` in the linter, add a CodeQL workflow and an
+  OpenSSF Scorecard workflow, and pin `golangci-lint` and `govulncheck` to
+  exact versions instead of `latest`
+* Ignore `*.tfstate` and `*.tfvars` everywhere. The previous `./*.tfstate`
+  pattern never matched anything, so a state file, and with it any key an
+  example configuration had read, could be committed
+
+ENHANCEMENTS:
+
+* Import `archive_on_destroy` and `delete_on_destroy` as `false` on every
+  resource that archives or deletes a real object (workspace, service account,
+  federation issuer and rule, agent, environment, vault, vault credential,
+  deployment, memory store, skill). Previously an imported production
+  workspace inherited `true`, and removing it from configuration archived it
+  and every API key scoped to it. The first plan after import now shows the
+  flag moving to its default so the operator decides; `anthropic_api_key` and
+  `anthropic_user` already imported the safe value
+* Warn in the plan when `anthropic_compliance_settings` is about to move to
+  `disabled`, since that stops audit-log export for the whole organization
+
+BUG FIXES:
+
+* Cap `Retry-After` at the 20 second retry ceiling. The default backoff honoured
+  the header unbounded, so a `429` or `503` carrying a large value parked the
+  apply for as long as the server asked
+* Do not replay a create after a `5xx` or a mid-flight transport error. The
+  server may have committed the write before failing, and a replay created a
+  second object that Terraform never learned about. Creates are still retried
+  on `429` and when the connection could not be opened at all; updates,
+  archives and reads keep the previous retry behaviour
+* Bound pagination at 1000 pages and stop when the server returns the same
+  cursor twice, instead of looping and accumulating memory forever
+* Close the response body when a request fails after a response arrived, and
+  report a body over 16 MiB as such rather than as a JSON decode error
+
 DOCUMENTATION:
 
 * `SECURITY.md`: replace the stale `0.1.x` support table with a "latest 0.x
@@ -35,6 +113,13 @@ CHORE:
   contributed in [#14](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/pull/14),
   which was opened before the equivalent in-house change was merged. Thanks to
   @Rayan-and-beyond
+* Run the client and mock unit tests in CI. The acceptance matrix only covered
+  `./internal/provider`, so `make test` and CI disagreed about what was tested
+* Cancel a superseded run of the test workflow and run on pushes to `main`
+  only, instead of once for the branch push and once for the pull request
+* Add `make tools` (installs the pinned linters) and `make vulncheck`
+* Bring the `tools/` module's `golang.org/x/*` dependencies level with the
+  provider's
 
 ## v0.3.0 (2026-09-16)
 
