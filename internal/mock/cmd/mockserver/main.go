@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/uttej-badwane/terraform-provider-anthropic-enterprise/internal/mock"
 )
@@ -34,8 +35,15 @@ func main() {
 	fmt.Printf("export ANTHROPIC_AUTH_TOKEN=%s\n", mock.OAuthToken)
 	fmt.Printf("export ANTHROPIC_ENTERPRISE_API_KEY=%s\n", mock.EnterpriseKey)
 
+	httpSrv := &http.Server{
+		Handler:           srv.Config.Handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       60 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
+	}
 	go func() {
-		_ = http.Serve(ln, srv.Config.Handler)
+		_ = httpSrv.Serve(ln)
 	}()
 
 	sig := make(chan os.Signal, 1)

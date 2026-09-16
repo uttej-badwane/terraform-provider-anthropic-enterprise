@@ -118,7 +118,7 @@ func (p *AnthropicProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 
 // credentialMismatchSummary heads the diagnostic raised when a credential
 // belongs to a different class than the attribute holding it.
-const credentialMismatchSummary = "Credential of the wrong class"
+const credentialMismatchSummary = "Credential of the wrong class" //nolint:gosec // diagnostic title, not a credential
 
 // credentialMismatch describes one credential attribute and a key prefix that
 // certainly belongs to a different class.

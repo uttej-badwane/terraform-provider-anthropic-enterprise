@@ -14,7 +14,9 @@ website/build
 website/node_modules
 .vagrant/
 *.backup
-./*.tfstate
+*.tfstate
+*.tfvars
+*.tfvars.json
 .terraform/
 *.log
 *.bak
@@ -42,3 +44,4 @@ dev.tfrc.local
 *.tfstate.*
 .terraform.lock.hcl
 /terraform-provider-anthropic-enterprise
+terraform-provider-anthropic-enterprise_v*

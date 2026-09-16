@@ -7,7 +7,9 @@ linters:
     - durationcheck
     - errcheck
     - forcetypeassert
+    - bodyclose
     - godot
+    - gosec
     - ineffassign
     - makezero
     - misspell

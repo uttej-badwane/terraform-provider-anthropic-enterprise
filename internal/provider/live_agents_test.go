@@ -34,7 +34,7 @@ func writeLiveSkill(t *testing.T) string {
 		t.Fatal(err)
 	}
 	skill := "---\nname: tf-acc-release-notes\ndescription: Draft release notes from a changelog. Acceptance test fixture.\n---\n# Release notes\n\nSummarize the changelog entries.\n"
-	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte(skill), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte(skill), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	return dir

@@ -5,8 +5,11 @@ version: 2
 project_name: terraform-provider-anthropic-enterprise
 before:
   hooks:
-    # this is just an example and not a requirement for provider building/publishing
-    - go mod tidy
+    # Build exactly the module graph that was reviewed. `go mod tidy` used to
+    # run here and could rewrite go.mod/go.sum inside the release job; verify
+    # fails instead if the cached modules do not match go.sum.
+    - go mod download
+    - go mod verify
 builds:
 - env:
     # goreleaser does not work with CGO, it could also complicate
@@ -45,6 +48,10 @@ archives:
 - formats:
   - zip
   name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+sboms:
+  # One SPDX SBOM per archive, produced by syft. Not read by the registry;
+  # attached to the GitHub release for anyone who audits what they install.
+  - artifacts: archive
 checksum:
   extra_files:
     - glob: 'terraform-registry-manifest.json'
