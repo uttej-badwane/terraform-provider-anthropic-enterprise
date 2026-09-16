@@ -1,0 +1,59 @@
+# Dependency updates. There are two Go modules: the provider at the root and
+# the documentation tooling under tools/, which Dependabot treats separately.
+#
+# Minor and patch bumps are grouped into a single pull request per ecosystem to
+# keep review load low; majors arrive on their own because they need thought.
+version: 2
+
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+    commit-message:
+      prefix: "deps"
+    groups:
+      go-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: gomod
+    directory: /tools
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - tooling
+    commit-message:
+      prefix: "deps(tools)"
+    groups:
+      tools-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Workflow actions are pinned to commit SHAs, which Dependabot rewrites while
+  # keeping the human-readable version comment in step.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: "deps(actions)"
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - minor
+          - patch

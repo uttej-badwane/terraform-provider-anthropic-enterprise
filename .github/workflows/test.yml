@@ -34,6 +34,25 @@ jobs:
         with:
           version: latest
 
+  # Dependabot reports dependencies whose version is known to be vulnerable.
+  # govulncheck goes further and reports only the vulnerabilities this code can
+  # actually reach, so the two together catch both the upgrade and the exposure.
+  vulncheck:
+    name: Vulnerability scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # govulncheck tracks the current Go release and needs a newer toolchain
+      # than the module's floor, which go-version-file would pin it to. The
+      # scan is unaffected by building with a newer Go than the module targets.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+      - name: Run govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
   generate:
     runs-on: ubuntu-latest
     steps:

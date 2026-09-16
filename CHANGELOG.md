@@ -17,9 +17,22 @@ DOCUMENTATION:
   account assumed by GitHub Actions through workload identity federation
 * Add registry, CI and licence badges and guide links to the README
 
+SECURITY:
+
+* Update `google.golang.org/grpc` to 1.83.2, `golang.org/x/net` to 0.56.0 and
+  `golang.org/x/text` to 0.39.0, clearing five vulnerabilities that govulncheck
+  reported as reachable from provider code (GO-2026-6443, GO-2026-6348,
+  GO-2026-6061, GO-2026-5970, GO-2026-5026). All are transitive dependencies of
+  the plugin framework; the provider's own behaviour is unchanged
+* Run `govulncheck` in CI, so a dependency whose vulnerable code path is
+  reachable fails the build rather than waiting to be noticed
+* Add Dependabot for both Go modules and for workflow actions, grouping minor
+  and patch bumps into one pull request per ecosystem
+
 CHORE:
 
 * Add issue and pull request templates, `SECURITY.md` and `CODE_OF_CONDUCT.md`
+* Document the pull request workflow and where to start in `CONTRIBUTING.md`
 
 ## v0.1.0 (2026-09-15)
 
