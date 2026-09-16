@@ -3,13 +3,12 @@ name: Tests
 
 # This GitHub action runs your tests for each pull request and push.
 # Optionally, you can turn it on using a schedule for regular testing.
+# Every push and pull request runs the full suite. README changes used to be
+# skipped, but the required status checks on main mean a skipped workflow never
+# reports and the pull request waits forever, so nothing is path-filtered.
 on:
   pull_request:
-    paths-ignore:
-      - 'README.md'
   push:
-    paths-ignore:
-      - 'README.md'
 
 # Testing only needs permissions to read the repository contents.
 permissions:

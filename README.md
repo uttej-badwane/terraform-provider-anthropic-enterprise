@@ -105,6 +105,37 @@ The Managed Agents control plane (agents, environments, vaults, credentials, sch
 * Skills are uploaded from a local directory. A SHA-256 over the files decides when a new version is created; the API exposes no content hash, so remote edits are not detected.
 * Agents and deployments cannot be deleted through the API; destroy archives them. Environments, vaults, credentials, memory stores and skills delete for real unless `delete_on_destroy = false`.
 
+## Contributing
+
+[![good first issues](https://img.shields.io/github/issues/uttej-badwane/terraform-provider-anthropic-enterprise/good%20first%20issue?label=good%20first%20issues&color=7057ff)](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+[![help wanted](https://img.shields.io/github/issues/uttej-badwane/terraform-provider-anthropic-enterprise/help%20wanted?label=help%20wanted&color=008672)](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
+
+Contributions are welcome, and **you do not need an Anthropic account to make
+one**. The acceptance suite runs against an in-process mock of every API the
+provider touches, so `make testacc` works on a fresh clone with no credentials,
+and pull requests from forks get the full suite in CI automatically.
+
+**[Good first issues](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)** ·
+**[Help wanted](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)** ·
+[All open issues](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues)
+
+Currently open, smallest first:
+
+| Issue | What it needs |
+|---|---|
+| [#21](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/21) | Unit tests for the eventual-consistency helpers. Pure Go, no Terraform, no credentials |
+| [#20](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/20) | An acceptance test for `anthropic_external_key` updates, against the mock |
+| [#18](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/18) | Expose the request timeout and retry count as provider attributes |
+| [#19](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/19) | `timeouts` blocks on the resources that wait for eventual consistency |
+| [#22](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/22) | An ephemeral resource for federation token exchange. The largest, and the most interesting |
+
+Each issue names the files to change and the conventions to follow. Comment to
+claim one and it will be assigned to you — the maintainer is not working on any
+of them.
+
+[CONTRIBUTING.md](./CONTRIBUTING.md) covers the workflow, how to run the suite,
+and how to drive the provider against the standalone mock server.
+
 ## Development
 
 A standalone mock of the Admin API ships with the repo for offline testing with the real CLI:

@@ -2,6 +2,13 @@
 
 CHORE:
 
+* Add a Contributing section to the README pointing at the open `good first
+  issue` and `help wanted` lists, with badges that track their counts, and say
+  plainly that no Anthropic account is needed to contribute
+* Stop path-filtering the test workflow. `paths-ignore: README.md` meant a
+  README-only pull request triggered no workflows, so the required status checks
+  never reported and branch protection blocked the pull request indefinitely
+
 * The mock server documentation in `CONTRIBUTING.md` is now the version
   contributed in [#14](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/pull/14),
   which was opened before the equivalent in-house change was merged. Thanks to
