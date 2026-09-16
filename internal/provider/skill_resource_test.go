@@ -95,7 +95,7 @@ func TestAccSkillResource_missingSkillMD(t *testing.T) {
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
 		Steps: []resource.TestStep{{
 			Config:      providerConfig + fmt.Sprintf(`resource "anthropic_skill" "bad" { source_dir = %q }`, dir),
-			ExpectError: regexp.MustCompile(`must contain SKILL.md`),
+			ExpectError: regexp.MustCompile(`must contain\s+SKILL\.md`),
 		}},
 	})
 }
