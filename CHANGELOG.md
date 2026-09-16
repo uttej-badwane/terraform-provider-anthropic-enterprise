@@ -18,6 +18,32 @@ SECURITY:
 * Mask every configured credential by value in provider logs. The previous
   field-key masking never matched a logged field and did not reach request
   contexts
+* Require `https://` on every attribute that decides where a token or a signing
+  key goes: `anthropic_federation_issuer.jwks.url` and `jwks.discovery_base`
+  (where JWT signing keys are fetched from), `anthropic_vault_credential`
+  `static_bearer.mcp_server_url`, `mcp_oauth.mcp_server_url` and
+  `mcp_oauth.refresh.token_endpoint` (where the bearer, access and refresh
+  tokens are sent), and `anthropic_deployment.github_repositories[].url` (where
+  the clone token is sent). `issuer_url` already had the check; the siblings
+  did not, so a cleartext URL was accepted and the platform would have
+  delivered the secret to it
+* `anthropic_skill` no longer follows symlinks inside `source_dir`. A link to a
+  file outside the skill directory would have been read and uploaded under the
+  link's name. The file-count and size limits are now enforced during the walk
+  rather than after the whole tree is in memory
+
+ENHANCEMENTS:
+
+* Import `archive_on_destroy` and `delete_on_destroy` as `false` on every
+  resource that archives or deletes a real object (workspace, service account,
+  federation issuer and rule, agent, environment, vault, vault credential,
+  deployment, memory store, skill). Previously an imported production
+  workspace inherited `true`, and removing it from configuration archived it
+  and every API key scoped to it. The first plan after import now shows the
+  flag moving to its default so the operator decides; `anthropic_api_key` and
+  `anthropic_user` already imported the safe value
+* Warn in the plan when `anthropic_compliance_settings` is about to move to
+  `disabled`, since that stops audit-log export for the whole organization
 
 BUG FIXES:
 
@@ -43,14 +69,12 @@ CHORE:
   contributors
 * Add a short `CLAUDE.md` orienting coding agents in the repository layout and
   pointing them at `CONTRIBUTING.md` for the rules
-
 * Add a Contributing section to the README pointing at the open `good first
   issue` and `help wanted` lists, with badges that track their counts, and say
   plainly that no Anthropic account is needed to contribute
 * Stop path-filtering the test workflow. `paths-ignore: README.md` meant a
   README-only pull request triggered no workflows, so the required status checks
   never reported and branch protection blocked the pull request indefinitely
-
 * The mock server documentation in `CONTRIBUTING.md` is now the version
   contributed in [#14](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/pull/14),
   which was opened before the equivalent in-house change was merged. Thanks to

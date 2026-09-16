@@ -95,7 +95,7 @@ func (r *federationIssuerResource) Schema(_ context.Context, _ resource.SchemaRe
 			"issuer_url": schema.StringAttribute{
 				MarkdownDescription: "Exact `iss` claim value tokens must carry, for example `https://token.actions.githubusercontent.com`. Must use `https://`.",
 				Required:            true,
-				Validators:          []validator.String{stringvalidator.RegexMatches(httpsRegexp, "must start with https://")},
+				Validators:          []validator.String{httpsURL()},
 			},
 			"check_jti": schema.BoolAttribute{
 				MarkdownDescription: "Reject replayed tokens by tracking the `jti` claim. Defaults to `true`.",
@@ -128,14 +128,16 @@ func (r *federationIssuerResource) Schema(_ context.Context, _ resource.SchemaRe
 						Computed:            true,
 					},
 					"discovery_base": schema.StringAttribute{
-						MarkdownDescription: "Alternative base URL for OIDC discovery (`discovery` only).",
+						MarkdownDescription: "Alternative base URL for OIDC discovery (`discovery` only). Must use `https://`.",
 						Optional:            true,
 						Computed:            true,
+						Validators:          []validator.String{httpsURL()},
 					},
 					"url": schema.StringAttribute{
-						MarkdownDescription: "JWKS endpoint URL. Required when `type` is `explicit_url`.",
+						MarkdownDescription: "JWKS endpoint URL. Required when `type` is `explicit_url`. Must use `https://`.",
 						Optional:            true,
 						Computed:            true,
+						Validators:          []validator.String{httpsURL()},
 					},
 					"keys": schema.ListAttribute{
 						MarkdownDescription: "JWK objects as JSON strings, one per key. Required when `type` is `inline`.",
@@ -146,7 +148,7 @@ func (r *federationIssuerResource) Schema(_ context.Context, _ resource.SchemaRe
 				},
 			},
 			"archive_on_destroy": schema.BoolAttribute{
-				MarkdownDescription: "Archive the issuer when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state.",
+				MarkdownDescription: "Archive the issuer when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.",
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
@@ -307,7 +309,7 @@ func (r *federationIssuerResource) Delete(ctx context.Context, req resource.Dele
 
 func (r *federationIssuerResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("archive_on_destroy"), types.BoolValue(true))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("archive_on_destroy"), types.BoolValue(false))...)
 }
 
 // expandJWKS converts the jwks object into the API union; nil when unset.

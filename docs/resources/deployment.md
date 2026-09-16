@@ -66,7 +66,7 @@ resource "anthropic_deployment" "nightly_report" {
 ### Optional
 
 - `agent_version` (Number) Agent version to pin. Defaults to the agent's latest version at creation and then stays fixed; set it explicitly (for example to `anthropic_agent.x.version`) to roll forward.
-- `archive_on_destroy` (Boolean) Archive on destroy (default `true`); `false` only removes the resource from state.
+- `archive_on_destroy` (Boolean) Archive on destroy (default `true`); `false` only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `budget_max_list_cost_cents` (String) Per-run budget cap in USD cents as an integer string. Omit for no cap.
 - `description` (String) Description (max 2048).
 - `files` (Attributes List) Files (Files API ids) mounted into each session. (see [below for nested schema](#nestedatt--files))
@@ -106,7 +106,7 @@ Optional:
 
 Required:
 
-- `url` (String) Repository URL.
+- `url` (String) Repository URL. Must use `https://`; the authorization token is sent to this host.
 
 Optional:
 

@@ -47,7 +47,7 @@ resource "anthropic_environment" "ci" {
 
 ### Optional
 
-- `delete_on_destroy` (Boolean) Delete the environment on destroy (default `true`). When `false`, it is archived instead.
+- `delete_on_destroy` (Boolean) Delete the environment on destroy (default `true`). When `false`, it is archived instead. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `description` (String) Description, up to 1024 characters.
 - `metadata` (Map of String) Key/value metadata, max 16 pairs.
 - `networking` (Attributes) Network policy for `cloud` environments. Defaults to `{ type = "unrestricted" }`. Null for `self_hosted`. (see [below for nested schema](#nestedatt--networking))
