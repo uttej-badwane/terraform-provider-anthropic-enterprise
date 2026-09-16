@@ -436,11 +436,22 @@ func flattenFederationRule(ctx context.Context, rule *client.FederationRule, m *
 
 // rereadRule fetches the rule again after a write: the create and update
 // responses omit the read-time fields issuer_name and service_account_name,
-// which GET populates. Falls back to the write response on error.
+// which GET populates. Those two are denormalized and can still be absent for
+// a moment after the write, so poll until both arrive rather than persisting a
+// half-filled read that a later refresh or import would contradict. Falls back
+// to the write response on error and to the last read once the wait elapses.
 func (r *federationRuleResource) rereadRule(ctx context.Context, written *client.FederationRule) *client.FederationRule {
-	got, err := r.client.GetFederationRule(ctx, written.ID)
-	if err != nil {
-		return written
-	}
-	return got
+	best := written
+	waitUntil(ctx, func() bool {
+		got, err := r.client.GetFederationRule(ctx, written.ID)
+		if err != nil {
+			return false
+		}
+		best = got
+		return nonEmpty(got.IssuerName) && nonEmpty(got.Target.ServiceAccountName)
+	})
+	return best
 }
+
+// nonEmpty reports whether an optional string arrived with a value.
+func nonEmpty(s *string) bool { return s != nil && *s != "" }
