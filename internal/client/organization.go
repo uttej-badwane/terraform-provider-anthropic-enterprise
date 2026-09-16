@@ -105,7 +105,7 @@ func (c *Client) ListInvites(ctx context.Context, opts InviteListOptions) ([]Inv
 // CreateInvite sends an invitation.
 func (c *Client) CreateInvite(ctx context.Context, in InviteCreate) (*Invite, error) {
 	var out Invite
-	if err := c.post(ctx, c.memberCred(), orgPath+"/invites", in, &out); err != nil {
+	if err := c.create(ctx, c.memberCred(), orgPath+"/invites", in, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

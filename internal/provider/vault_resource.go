@@ -67,7 +67,7 @@ func (r *vaultResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Optional:            true,
 			},
 			"delete_on_destroy": schema.BoolAttribute{
-				MarkdownDescription: "Hard-delete on destroy (default `true`). `false` archives the vault instead.",
+				MarkdownDescription: "Hard-delete on destroy (default `true`). `false` archives the vault instead. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.",
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
@@ -172,5 +172,5 @@ func (r *vaultResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 func (r *vaultResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("delete_on_destroy"), types.BoolValue(true))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("delete_on_destroy"), types.BoolValue(false))...)
 }

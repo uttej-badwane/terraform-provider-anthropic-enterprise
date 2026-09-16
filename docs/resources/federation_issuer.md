@@ -48,7 +48,7 @@ resource "anthropic_federation_issuer" "internal_ci" {
 
 ### Optional
 
-- `archive_on_destroy` (Boolean) Archive the issuer when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state.
+- `archive_on_destroy` (Boolean) Archive the issuer when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `check_jti` (Boolean) Reject replayed tokens by tracking the `jti` claim. Defaults to `true`.
 - `jwks` (Attributes) Where the issuer's signing keys come from. Defaults to `{ type = "discovery" }` (OIDC discovery from `issuer_url`). (see [below for nested schema](#nestedatt--jwks))
 - `max_jwt_lifetime_seconds` (Number) Maximum accepted token lifetime in seconds (1 to 176400). Defaults to `3600`.
@@ -67,10 +67,10 @@ resource "anthropic_federation_issuer" "internal_ci" {
 Optional:
 
 - `ca_cert_pem` (String) PEM CA certificate used to verify the JWKS endpoint (`discovery` and `explicit_url`).
-- `discovery_base` (String) Alternative base URL for OIDC discovery (`discovery` only).
+- `discovery_base` (String) Alternative base URL for OIDC discovery (`discovery` only). Must use `https://`.
 - `keys` (List of String) JWK objects as JSON strings, one per key. Required when `type` is `inline`.
 - `type` (String) `discovery`, `explicit_url` or `inline`. Required when `jwks` is set.
-- `url` (String) JWKS endpoint URL. Required when `type` is `explicit_url`.
+- `url` (String) JWKS endpoint URL. Required when `type` is `explicit_url`. Must use `https://`.
 
 ## Import
 

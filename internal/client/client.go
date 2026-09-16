@@ -6,9 +6,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -23,6 +25,10 @@ const (
 	anthropicVersion = "2023-06-01"
 	defaultTimeout   = 60 * time.Second
 	defaultRetries   = 4
+	// maxResponseBytes bounds how much of a response body is read.
+	maxResponseBytes = 16 << 20
+	// errorBodySnippet bounds how much of a non-JSON error body is logged.
+	errorBodySnippet = 512
 )
 
 // CredentialClass selects which credential a request must be sent with.
@@ -102,12 +108,9 @@ type Client struct {
 
 // New returns a configured Client. At least one credential must be set.
 func New(cfg Config) (*Client, error) {
-	base := strings.TrimRight(cfg.BaseURL, "/")
-	if base == "" {
-		base = DefaultBaseURL
-	}
-	if _, err := url.ParseRequestURI(base); err != nil {
-		return nil, fmt.Errorf("invalid base_url %q: %w", cfg.BaseURL, err)
+	base, err := validateBaseURL(cfg.BaseURL)
+	if err != nil {
+		return nil, err
 	}
 	if cfg.AdminAPIKey == "" && cfg.OAuthToken == "" && cfg.EnterpriseAPIKey == "" && cfg.ComplianceAPIKey == "" && cfg.AnalyticsAPIKey == "" && cfg.APIKey == "" {
 		return nil, fmt.Errorf("no credentials configured: set admin_api_key, oauth_token, enterprise_api_key, compliance_api_key, analytics_api_key or api_key")
@@ -122,11 +125,18 @@ func New(cfg Config) (*Client, error) {
 	rc.RetryWaitMin = 500 * time.Millisecond
 	rc.RetryWaitMax = 20 * time.Second
 	rc.CheckRetry = checkRetry
+	rc.Backoff = clampedBackoff
 	rc.ErrorHandler = retryablehttp.PassthroughErrorHandler
 	if cfg.HTTPClient != nil {
 		rc.HTTPClient = cfg.HTTPClient
 	} else {
 		rc.HTTPClient.Timeout = defaultTimeout
+	}
+	// The API never redirects. Following one would replay X-Api-Key on the
+	// new host, because net/http strips only Authorization and Cookie when the
+	// host changes. Surface the 3xx as an error instead.
+	if rc.HTTPClient.CheckRedirect == nil {
+		rc.HTTPClient.CheckRedirect = refuseRedirect
 	}
 
 	ua := cfg.UserAgent
@@ -190,17 +200,94 @@ func (c *Client) Has(class CredentialClass) bool {
 	return false
 }
 
+// validateBaseURL normalises the API base URL and rejects one that would send
+// a credential somewhere it should not go: a non-HTTPS scheme (except to the
+// loopback interface, where the bundled mock server listens) or embedded
+// userinfo. Error text never contains the raw value.
+func validateBaseURL(raw string) (string, error) {
+	base := strings.TrimRight(raw, "/")
+	if base == "" {
+		return DefaultBaseURL, nil
+	}
+	u, err := url.ParseRequestURI(base)
+	if err != nil || u.Host == "" {
+		return "", fmt.Errorf("invalid base_url: expected an absolute URL such as %s", DefaultBaseURL)
+	}
+	if u.User != nil {
+		return "", fmt.Errorf("invalid base_url %s: credentials in the URL are not supported; use the provider credential attributes", u.Redacted())
+	}
+	switch u.Scheme {
+	case "https":
+	case "http":
+		if !isLoopbackHost(u.Hostname()) {
+			return "", fmt.Errorf("invalid base_url %s: http is only accepted for loopback addresses; use https", u.Redacted())
+		}
+	default:
+		return "", fmt.Errorf("invalid base_url %s: scheme must be https", u.Redacted())
+	}
+	return base, nil
+}
+
+func isLoopbackHost(host string) bool {
+	if host == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(host)
+	return ip != nil && ip.IsLoopback()
+}
+
+func refuseRedirect(_ *http.Request, _ []*http.Request) error {
+	return http.ErrUseLastResponse
+}
+
+// clampedBackoff honours Retry-After like the default policy but never sleeps
+// longer than RetryWaitMax, so a hostile or misconfigured server cannot park
+// the provider indefinitely.
+func clampedBackoff(minWait, maxWait time.Duration, attempt int, resp *http.Response) time.Duration {
+	d := retryablehttp.DefaultBackoff(minWait, maxWait, attempt, resp)
+	if d > maxWait {
+		return maxWait
+	}
+	return d
+}
+
+// ctxKeyCreate marks a request that creates an object. Such a request is not
+// replayed after a 5xx or a mid-flight transport error: the server may have
+// committed the write before failing, and a replay would create a duplicate
+// that Terraform never learns about.
+type ctxKeyCreate struct{}
+
+func isCreate(ctx context.Context) bool {
+	v, _ := ctx.Value(ctxKeyCreate{}).(bool)
+	return v
+}
+
 func checkRetry(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	if ctx.Err() != nil {
 		return false, ctx.Err()
 	}
+	create := isCreate(ctx)
 	if err != nil {
+		if create && !failedBeforeSend(err) {
+			return false, nil //nolint:nilerr // the write may have landed; surface the error
+		}
 		return true, nil //nolint:nilerr // transport errors are retried
 	}
-	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
+	if resp.StatusCode == http.StatusTooManyRequests {
 		return true, nil
 	}
+	if resp.StatusCode >= 500 {
+		return !create, nil
+	}
 	return false, nil
+}
+
+// failedBeforeSend reports whether a transport error happened before any
+// request bytes reached the server, in which case a replay cannot duplicate
+// a write.
+func failedBeforeSend(err error) bool {
+	var opErr *net.OpError
+	return errors.As(err, &opErr) && opErr.Op == "dial"
 }
 
 func (c *Client) authorize(req *http.Request, class CredentialClass) error {
@@ -301,21 +388,37 @@ func (c *Client) do(ctx context.Context, class CredentialClass, method, path str
 		o(req.Request)
 	}
 
+	ctx = c.maskSecrets(ctx)
 	tflog.Debug(ctx, "anthropic admin api request", map[string]any{"method": method, "path": path})
 
 	resp, err := c.http.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return fmt.Errorf("%s %s: %w", method, path, err)
 	}
-	defer resp.Body.Close()
 
-	raw, err := io.ReadAll(io.LimitReader(resp.Body, 16<<20))
+	raw, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
 	if err != nil {
 		return fmt.Errorf("%s %s: reading response: %w", method, path, err)
 	}
+	if len(raw) > maxResponseBytes {
+		return fmt.Errorf("%s %s: response body exceeds %d bytes", method, path, maxResponseBytes)
+	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return newAPIError(method, path, resp, raw)
+		apiErr := newAPIError(method, path, resp, raw)
+		if apiErr.Type == "" && len(raw) > 0 {
+			// Not the API's error envelope, so it came from something in
+			// between. Keep it out of diagnostics; a debug log is enough.
+			snippet := raw
+			if len(snippet) > errorBodySnippet {
+				snippet = snippet[:errorBodySnippet]
+			}
+			tflog.Debug(ctx, "non-JSON error response body", map[string]any{"status": resp.StatusCode, "body": string(snippet)})
+		}
+		return apiErr
 	}
 	if out == nil || len(raw) == 0 {
 		return nil
@@ -332,6 +435,24 @@ func (c *Client) get(ctx context.Context, class CredentialClass, path string, q 
 
 func (c *Client) post(ctx context.Context, class CredentialClass, path string, body, out any, opts ...reqOption) error {
 	return c.do(ctx, class, http.MethodPost, path, nil, body, out, opts...)
+}
+
+// create is post for requests that make a new object. See ctxKeyCreate.
+func (c *Client) create(ctx context.Context, class CredentialClass, path string, body, out any, opts ...reqOption) error {
+	return c.post(context.WithValue(ctx, ctxKeyCreate{}, true), class, path, body, out, opts...)
+}
+
+// maskSecrets redacts every configured credential from log output produced
+// with the returned context, wherever the value appears.
+func (c *Client) maskSecrets(ctx context.Context) context.Context {
+	var secrets []string
+	for _, s := range []string{c.admin, c.oauth, c.enterprise, c.compliance, c.analytics, c.apiKey} {
+		if s != "" {
+			secrets = append(secrets, s)
+		}
+	}
+	ctx = tflog.MaskAllFieldValuesStrings(ctx, secrets...)
+	return tflog.MaskMessageStrings(ctx, secrets...)
 }
 
 func (c *Client) delete(ctx context.Context, class CredentialClass, path string, opts ...reqOption) error {
@@ -366,6 +487,8 @@ func (c *Client) postMultipart(ctx context.Context, class CredentialClass, path 
 	if err := mw.Close(); err != nil {
 		return err
 	}
+	// Every multipart endpoint creates a skill or a skill version.
+	ctx = context.WithValue(ctx, ctxKeyCreate{}, true)
 	return c.do(ctx, class, http.MethodPost, path, nil, rawBody{contentType: mw.FormDataContentType(), data: buf.Bytes()}, out, opts...)
 }
 
