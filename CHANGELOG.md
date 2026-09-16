@@ -1,3 +1,12 @@
+## Unreleased
+
+CHORE:
+
+* Document the standalone mock server in `CONTRIBUTING.md`. It runs the
+  acceptance suite's mock as a real HTTP server, so the provider can be driven
+  end to end with no Anthropic credentials — the fastest way to work on it
+  without an organization to test against ([#8](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/8))
+
 ## v0.2.0 (2026-09-16)
 
 DOCUMENTATION:
