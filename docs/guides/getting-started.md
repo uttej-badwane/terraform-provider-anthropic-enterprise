@@ -8,7 +8,7 @@ description: |-
 # Getting started
 
 This guide takes you from nothing to a managed workspace. It assumes Terraform
-1.13 or newer, or OpenTofu 1.9 or newer.
+1.13 or newer, or OpenTofu 1.11 or newer.
 
 ## 1. Declare the provider
 

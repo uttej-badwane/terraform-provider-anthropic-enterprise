@@ -78,6 +78,22 @@ BUG FIXES:
 * Close the response body when a request fails after a response arrived, and
   report a body over 16 MiB as such rather than as a JSON decode error
 
+DOCUMENTATION:
+
+* `SECURITY.md`: replace the stale `0.1.x` support table with a "latest 0.x
+  minor" policy, give the disclosure process a concrete timeline (3 business
+  days to acknowledge, 7 to assess, 90-day disclosure window), describe where
+  credentials are allowed to travel, and explain how to verify a release with
+  `gh attestation verify`
+* README: add a Security section, a Governance section pointing at
+  `ROADMAP.md`, CodeQL and OpenSSF Scorecard badges, and the explicit
+  `registry.terraform.io/` source OpenTofu users need until the provider is
+  listed in the OpenTofu registry
+* Add `ROADMAP.md` (what is next, what is later, what is not planned) and
+  `AGENTS.md` for coding agents that do not read `CLAUDE.md`
+* Correct the OpenTofu floor in the getting-started guide from 1.9 to 1.11,
+  matching the README and the CI matrix
+
 CHORE:
 
 * Record the conventions and the traps that have actually cost time in

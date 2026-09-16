@@ -3,12 +3,14 @@
 ## Supported versions
 
 The most recent minor release receives security fixes. The provider is below
-1.0, so patches land on the current line rather than being backported.
+1.0, so patches land on the current line rather than being backported. Check
+the [releases page](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/releases)
+for the current line.
 
 | Version | Supported |
 |---|---|
-| 0.1.x | Yes |
-| < 0.1 | No |
+| Latest 0.x minor | Yes |
+| Earlier 0.x | No, upgrade to the latest minor |
 
 ## Reporting a vulnerability
 
@@ -25,9 +27,13 @@ Please include:
 - What an attacker can do, and what access they need to do it.
 - Steps to reproduce, with any credentials or organization identifiers removed.
 
-You can expect an acknowledgement within a few days. If a fix is warranted, it
-ships in a patch release with an advisory crediting you, unless you prefer
-otherwise.
+What to expect:
+
+- An acknowledgement within 3 business days.
+- A severity assessment and a plan within 7 days of the acknowledgement.
+- A fix in a patch release, with a GitHub Security Advisory crediting you
+  unless you prefer otherwise. Please hold public disclosure until the release
+  is out or 90 days have passed, whichever comes first.
 
 **Do not include real credentials, organization ids, user ids or email
 addresses in a report.** If a credential has been exposed, revoke it first —
@@ -58,3 +64,31 @@ created through the Anthropic API, so no key material passes through it, and
 vault credential secrets use write-only attributes that are sent to the API and
 never persisted. If you find a path where a secret reaches state, a log or an
 error message, that is a vulnerability and we want to hear about it.
+
+Where credentials travel is constrained on purpose:
+
+- Every request goes to `base_url`, which must be `https` (plain `http` only
+  for loopback addresses, so the bundled mock works) and may not carry
+  embedded credentials.
+- HTTP redirects are refused, not followed, so a key is never replayed against
+  a host the configuration did not name.
+- Attributes that name a host a token or signing key is sent to or fetched
+  from (`jwks.url`, `mcp_server_url`, `token_endpoint`, repository URLs)
+  require `https`.
+- Error bodies that are not the API's own error envelope are not copied into
+  Terraform diagnostics.
+- Configured credential values are masked by value in provider logs.
+
+## Verifying a release
+
+Release checksums are signed with the maintainer's GPG key, which the Terraform
+Registry verifies on ingest. Every archive also carries SLSA build provenance
+from GitHub Actions:
+
+```sh
+gh attestation verify terraform-provider-anthropic-enterprise_<version>_linux_amd64.zip \
+  --repo uttej-badwane/terraform-provider-anthropic-enterprise
+```
+
+A successful verification proves the file was built by this repository's
+release workflow from the tagged commit.
