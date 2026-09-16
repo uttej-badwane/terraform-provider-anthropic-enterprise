@@ -20,7 +20,7 @@ func TestReadSkillDirSkipsSymlinks(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("# skill"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("# skill"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.Symlink(secret, filepath.Join(dir, "notes.md")); err != nil {
@@ -47,11 +47,11 @@ func TestReadSkillDirEnforcesFileCountWhileWalking(t *testing.T) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("# skill"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "SKILL.md"), []byte("# skill"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	for i := 0; i < skillMaxFiles+5; i++ {
-		if err := os.WriteFile(filepath.Join(dir, "f"+string(rune('a'+i%26))+string(rune('a'+i/26))+".txt"), []byte("x"), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, "f"+string(rune('a'+i%26))+string(rune('a'+i/26))+".txt"), []byte("x"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 	}
