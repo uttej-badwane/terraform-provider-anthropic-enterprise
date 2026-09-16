@@ -26,6 +26,12 @@ SECURITY:
   the plugin framework; the provider's own behaviour is unchanged
 * Run `govulncheck` in CI, so a dependency whose vulnerable code path is
   reachable fails the build rather than waiting to be noticed
+* Build releases with the current patched Go toolchain instead of the module's
+  minimum. v0.1.0 was built on go1.25.8 and shipped the standard library
+  vulnerabilities fixed in go1.25.9 and later, in `crypto/tls`, `crypto/x509`,
+  `html/template`, `encoding/asn1`, `mime` and `archive/tar`; a binary scan of
+  the v0.1.0 release reported 37 findings. A binary built from this change
+  reports none
 * Add Dependabot for both Go modules and for workflow actions, grouping minor
   and patch bumps into one pull request per ecosystem
 
