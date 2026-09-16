@@ -96,6 +96,11 @@ DOCUMENTATION:
 
 CHORE:
 
+* Require Go 1.27.1, the current stable release, in both modules. The previous
+  floor of 1.25.8 was on a line Go no longer patches and pinned the acceptance
+  matrix, via `go-version-file`, to a toolchain with known standard library
+  vulnerabilities. The directive now tracks the latest stable release; with no
+  downstream users yet there is nobody to hold it back
 * Record the conventions and the traps that have actually cost time in
   `CONTRIBUTING.md` — generated docs versus templates, error-expecting tests,
   diagnostic line wrapping in `ExpectError` patterns, required checks versus

@@ -1,6 +1,6 @@
 module github.com/uttej-badwane/terraform-provider-anthropic-enterprise
 
-go 1.25.8
+go 1.27.1
 
 require (
 	github.com/hashicorp/go-retryablehttp v0.7.8
