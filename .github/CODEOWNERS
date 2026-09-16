@@ -1,0 +1,4 @@
+# Review is requested automatically from the owner listed here when a pull
+# request touches a matching path. A single owner covers the whole repository
+# today; split this by directory if more maintainers join.
+* @uttej-badwane
