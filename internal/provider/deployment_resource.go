@@ -134,7 +134,7 @@ func (r *deploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				MarkdownDescription: "Git repositories mounted into each session.",
 				Optional:            true,
 				NestedObject: schema.NestedAttributeObject{Attributes: map[string]schema.Attribute{
-					"url":                 schema.StringAttribute{MarkdownDescription: "Repository URL.", Required: true},
+					"url":                 schema.StringAttribute{MarkdownDescription: "Repository URL. Must use `https://`; the authorization token is sent to this host.", Required: true, Validators: []validator.String{httpsURL()}},
 					"authorization_token": writeOnlySecret("Token used to clone private repositories.", false),
 					"checkout_branch":     schema.StringAttribute{MarkdownDescription: "Branch to check out.", Optional: true},
 					"checkout_commit":     schema.StringAttribute{MarkdownDescription: "Commit SHA to check out (instead of a branch).", Optional: true},
@@ -166,7 +166,7 @@ func (r *deploymentResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				MarkdownDescription: "Pause scheduled runs. Defaults to `false`. Also becomes `true` when the platform pauses the deployment after an error.",
 				Optional:            true, Computed: true, Default: booldefault.StaticBool(false),
 			},
-			"archive_on_destroy":  schema.BoolAttribute{MarkdownDescription: "Archive on destroy (default `true`); `false` only removes the resource from state.", Optional: true, Computed: true, Default: booldefault.StaticBool(true)},
+			"archive_on_destroy":  schema.BoolAttribute{MarkdownDescription: "Archive on destroy (default `true`); `false` only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.", Optional: true, Computed: true, Default: booldefault.StaticBool(true)},
 			"status":              schema.StringAttribute{MarkdownDescription: "`active` or `paused`.", Computed: true},
 			"paused_reason_type":  schema.StringAttribute{MarkdownDescription: "`manual` or `error` when paused; null otherwise.", Computed: true},
 			"paused_reason_error": schema.StringAttribute{MarkdownDescription: "Error type behind an error pause.", Computed: true},
@@ -538,7 +538,7 @@ func (r *deploymentResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 func (r *deploymentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("archive_on_destroy"), types.BoolValue(true))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("archive_on_destroy"), types.BoolValue(false))...)
 }
 
 var digitsOnlyRegexp = regexp.MustCompile(`^[0-9]+$`)

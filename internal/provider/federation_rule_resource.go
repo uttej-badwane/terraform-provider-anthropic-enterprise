@@ -155,7 +155,7 @@ func (r *federationRuleResource) Schema(_ context.Context, _ resource.SchemaRequ
 				Optional:            true,
 			},
 			"archive_on_destroy": schema.BoolAttribute{
-				MarkdownDescription: "Archive the rule when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state.",
+				MarkdownDescription: "Archive the rule when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.",
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
@@ -349,7 +349,7 @@ func (r *federationRuleResource) Delete(ctx context.Context, req resource.Delete
 
 func (r *federationRuleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("archive_on_destroy"), types.BoolValue(true))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("archive_on_destroy"), types.BoolValue(false))...)
 }
 
 func expandRuleMatch(ctx context.Context, obj types.Object, diags *diag.Diagnostics) client.RuleMatch {

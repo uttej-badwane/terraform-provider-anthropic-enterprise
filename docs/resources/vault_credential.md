@@ -65,7 +65,7 @@ resource "anthropic_vault_credential" "mcp" {
 
 ### Optional
 
-- `delete_on_destroy` (Boolean) Hard-delete on destroy (default `true`). `false` archives the credential and purges its secret instead.
+- `delete_on_destroy` (Boolean) Hard-delete on destroy (default `true`). `false` archives the credential and purges its secret instead. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `display_name` (String) Human-readable label (max 255).
 - `environment_variable` (Attributes) A secret exposed to the agent's sandbox as an environment variable and substituted at network egress. (see [below for nested schema](#nestedatt--environment_variable))
 - `mcp_oauth` (Attributes) An OAuth access token (optionally refreshable) for one MCP server. (see [below for nested schema](#nestedatt--mcp_oauth))
@@ -102,7 +102,7 @@ Optional:
 Required:
 
 - `access_token` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) OAuth access token. Write-only: sent to the API, never stored in state, never drift-detected. Requires Terraform 1.11 or newer.
-- `mcp_server_url` (String) MCP server URL. Immutable.
+- `mcp_server_url` (String) MCP server URL the access token is sent to. Must use `https://`. Immutable.
 
 Optional:
 
@@ -116,7 +116,7 @@ Required:
 
 - `client_id` (String) OAuth client id. Immutable.
 - `refresh_token` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) OAuth refresh token. Write-only: sent to the API, never stored in state, never drift-detected. Requires Terraform 1.11 or newer.
-- `token_endpoint` (String) OAuth token endpoint. Immutable.
+- `token_endpoint` (String) OAuth token endpoint the refresh token is sent to. Must use `https://`. Immutable.
 
 Optional:
 
@@ -132,7 +132,7 @@ Optional:
 
 Required:
 
-- `mcp_server_url` (String) MCP server URL the token is sent to. Immutable.
+- `mcp_server_url` (String) MCP server URL the token is sent to. Must use `https://`. Immutable.
 - `token` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Bearer token (1 to 8192 characters). Write-only: sent to the API, never stored in state, never drift-detected. Requires Terraform 1.11 or newer.
 
 ## Import
