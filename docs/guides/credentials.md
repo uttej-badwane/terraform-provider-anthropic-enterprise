@@ -107,3 +107,12 @@ bump `secret_version` to rotate.
 Prefer the environment variables over provider attributes for the credentials
 themselves. An attribute set from a variable is fine, but a credential written
 literally into a `.tf` file tends to end up committed.
+
+## Where requests go
+
+Every request goes to `base_url`, which defaults to `https://api.anthropic.com`
+and must use `https` (plain `http` is accepted only for loopback addresses, so
+the bundled mock server works). Redirects are refused rather than followed, so a
+credential is never replayed against a host the configuration did not name.
+Treat `ANTHROPIC_BASE_URL` in the environment of a Terraform run with the same
+care as the credentials: whoever controls it decides where the keys are sent.
