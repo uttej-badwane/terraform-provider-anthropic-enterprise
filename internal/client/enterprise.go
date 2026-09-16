@@ -17,7 +17,7 @@ func (c *Client) ListRBACGroups(ctx context.Context) ([]RBACGroup, error) {
 // CreateRBACGroup creates a group.
 func (c *Client) CreateRBACGroup(ctx context.Context, in RBACGroupWrite) (*RBACGroup, error) {
 	var out RBACGroup
-	if err := c.post(ctx, CredEnterprise, orgPath+"/rbac_groups", in, &out); err != nil {
+	if err := c.create(ctx, CredEnterprise, orgPath+"/rbac_groups", in, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -54,7 +54,7 @@ func (c *Client) ListRBACGroupMembers(ctx context.Context, groupID string) ([]RB
 // AddRBACGroupMember adds a user to a group.
 func (c *Client) AddRBACGroupMember(ctx context.Context, groupID, userID string) (*RBACGroupMember, error) {
 	var out RBACGroupMember
-	if err := c.post(ctx, CredEnterprise, rbacGroupPath(groupID)+"/members", RBACGroupMemberAdd{UserID: userID}, &out); err != nil {
+	if err := c.create(ctx, CredEnterprise, rbacGroupPath(groupID)+"/members", RBACGroupMemberAdd{UserID: userID}, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -118,7 +118,7 @@ func (c *Client) GetSpendLimit(ctx context.Context, id string) (*SpendLimit, err
 // UpsertSpendLimit creates or replaces a per-user spend limit.
 func (c *Client) UpsertSpendLimit(ctx context.Context, in SpendLimitCreate) (*SpendLimit, error) {
 	var out SpendLimit
-	if err := c.post(ctx, CredEnterprise, orgPath+"/spend_limits", in, &out); err != nil {
+	if err := c.create(ctx, CredEnterprise, orgPath+"/spend_limits", in, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

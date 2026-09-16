@@ -27,7 +27,7 @@ func (c *Client) ListServiceAccounts(ctx context.Context, includeArchived bool) 
 // CreateServiceAccount creates a service account.
 func (c *Client) CreateServiceAccount(ctx context.Context, in ServiceAccountCreate) (*ServiceAccount, error) {
 	var out ServiceAccount
-	if err := c.post(ctx, CredOAuth, orgPath+"/service_accounts", in, &out); err != nil {
+	if err := c.create(ctx, CredOAuth, orgPath+"/service_accounts", in, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -70,7 +70,7 @@ func (c *Client) ListFederationIssuers(ctx context.Context, includeArchived bool
 // CreateFederationIssuer registers an OIDC issuer.
 func (c *Client) CreateFederationIssuer(ctx context.Context, in FederationIssuerCreate) (*FederationIssuer, error) {
 	var out FederationIssuer
-	if err := c.post(ctx, CredOAuth, orgPath+"/federation_issuers", in, &out); err != nil {
+	if err := c.create(ctx, CredOAuth, orgPath+"/federation_issuers", in, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -123,7 +123,7 @@ func (c *Client) ListFederationRules(ctx context.Context, opts FederationRuleLis
 // CreateFederationRule creates a rule.
 func (c *Client) CreateFederationRule(ctx context.Context, in FederationRuleCreate) (*FederationRule, error) {
 	var out FederationRule
-	if err := c.post(ctx, CredOAuth, orgPath+"/federation_rules", in, &out); err != nil {
+	if err := c.create(ctx, CredOAuth, orgPath+"/federation_rules", in, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -165,7 +165,7 @@ func (c *Client) ListFederationRuleWorkspaces(ctx context.Context, ruleID string
 func (c *Client) AddFederationRuleWorkspace(ctx context.Context, ruleID, workspaceID string) (*FederationRuleWorkspace, error) {
 	var out FederationRuleWorkspace
 	body := map[string]string{"workspace_id": workspaceID}
-	if err := c.post(ctx, CredOAuth, rulePath(ruleID)+"/workspaces", body, &out); err != nil {
+	if err := c.create(ctx, CredOAuth, rulePath(ruleID)+"/workspaces", body, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -188,7 +188,7 @@ func (c *Client) ListExternalKeys(ctx context.Context) ([]ExternalKey, error) {
 // CreateExternalKey registers a CMEK.
 func (c *Client) CreateExternalKey(ctx context.Context, in ExternalKeyCreate) (*ExternalKey, error) {
 	var out ExternalKey
-	if err := c.post(ctx, CredAdmin, orgPath+"/external_keys", in, &out); err != nil {
+	if err := c.create(ctx, CredAdmin, orgPath+"/external_keys", in, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

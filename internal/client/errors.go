@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 )
 
 // APIError is a non-2xx response from the Admin API.
@@ -48,12 +47,12 @@ func newAPIError(method, path string, resp *http.Response, raw []byte) *APIError
 		Path:       path,
 		RequestID:  resp.Header.Get("request-id"),
 	}
+	// Only the API's own error envelope is surfaced. Anything else (a proxy
+	// or gateway page) is not echoed into diagnostics; do logs it at debug.
 	var env errorEnvelope
 	if json.Unmarshal(raw, &env) == nil && env.Error.Message != "" {
 		e.Type = env.Error.Type
 		e.Message = env.Error.Message
-	} else if s := strings.TrimSpace(string(raw)); s != "" && len(s) < 512 {
-		e.Message = s
 	}
 	return e
 }
