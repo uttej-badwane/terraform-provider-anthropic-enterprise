@@ -1,3 +1,12 @@
+## Unreleased
+
+CHORE:
+
+* Run the acceptance suite against OpenTofu in CI, on the 1.9 floor the README
+  claims and on a current release. The suite already supported it through
+  `TF_ACC_PROVIDER_HOST` and `TF_ACC_TERRAFORM_PATH`; nothing exercised it, so
+  the compatibility claim was untested ([#6](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/6))
+
 ## v0.2.0 (2026-09-16)
 
 DOCUMENTATION:
