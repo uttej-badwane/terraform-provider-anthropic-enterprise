@@ -11,7 +11,7 @@
 
 Manage an Anthropic organization with Terraform through the [Admin API](https://platform.claude.com/docs/en/manage-claude/admin-api): workspaces, workspace members, invites, users, API key status, service accounts, workload identity federation, customer-managed encryption keys, and, for Claude Enterprise organizations, RBAC groups and per-user spend limits.
 
-Built on the Terraform Plugin Framework (protocol 6). Works with Terraform 1.13+ and OpenTofu 1.9+.
+Built on the Terraform Plugin Framework (protocol 6). Works with Terraform 1.13+ and OpenTofu 1.11+. Both floors are exercised in CI. OpenTofu earlier than 1.11 rejects the write-only attributes that `anthropic_vault_credential` and `anthropic_deployment` rely on.
 
 The provider is published as `uttej-badwane/anthropic-enterprise`. Its resource and data source types use the `anthropic_` prefix, so declare it with the local name `anthropic` exactly as in the example below; Terraform maps `anthropic_*` types to that local name.
 

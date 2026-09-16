@@ -9,6 +9,20 @@ ENHANCEMENTS:
   regular API key in `admin_api_key` — because refusing a key that would have
   worked is worse than letting the API decide ([#7](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/7))
 
+BUG FIXES:
+
+* Correct the documented OpenTofu floor from 1.9 to 1.11. Releases before 1.11
+  reject the write-only attributes that `anthropic_vault_credential` and
+  `anthropic_deployment` rely on, so the previous claim never held for a
+  configuration that used them ([#6](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/6))
+
+CHORE:
+
+* Run the acceptance suite against OpenTofu in CI, on the 1.11 floor and on a
+  current release. The suite already supported it through
+  `TF_ACC_PROVIDER_HOST` and `TF_ACC_TERRAFORM_PATH`; nothing exercised it, which
+  is how the inaccurate floor above went unnoticed ([#6](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/6))
+
 ## v0.2.0 (2026-09-16)
 
 DOCUMENTATION:
