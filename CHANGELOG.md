@@ -1,5 +1,21 @@
 ## Unreleased
 
+DOCUMENTATION:
+
+* `SECURITY.md`: replace the stale `0.1.x` support table with a "latest 0.x
+  minor" policy, give the disclosure process a concrete timeline (3 business
+  days to acknowledge, 7 to assess, 90-day disclosure window), describe where
+  credentials are allowed to travel, and explain how to verify a release with
+  `gh attestation verify`
+* README: add a Security section, a Governance section pointing at
+  `ROADMAP.md`, CodeQL and OpenSSF Scorecard badges, and the explicit
+  `registry.terraform.io/` source OpenTofu users need until the provider is
+  listed in the OpenTofu registry
+* Add `ROADMAP.md` (what is next, what is later, what is not planned) and
+  `AGENTS.md` for coding agents that do not read `CLAUDE.md`
+* Correct the OpenTofu floor in the getting-started guide from 1.9 to 1.11,
+  matching the README and the CI matrix
+
 CHORE:
 
 * Record the conventions and the traps that have actually cost time in
@@ -9,14 +25,12 @@ CHORE:
   contributors
 * Add a short `CLAUDE.md` orienting coding agents in the repository layout and
   pointing them at `CONTRIBUTING.md` for the rules
-
 * Add a Contributing section to the README pointing at the open `good first
   issue` and `help wanted` lists, with badges that track their counts, and say
   plainly that no Anthropic account is needed to contribute
 * Stop path-filtering the test workflow. `paths-ignore: README.md` meant a
   README-only pull request triggered no workflows, so the required status checks
   never reported and branch protection blocked the pull request indefinitely
-
 * The mock server documentation in `CONTRIBUTING.md` is now the version
   contributed in [#14](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/pull/14),
   which was opened before the equivalent in-house change was merged. Thanks to

@@ -3,6 +3,8 @@
 [![Terraform Registry](https://img.shields.io/github/v/release/uttej-badwane/terraform-provider-anthropic-enterprise?label=registry&color=7b42bc)](https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest)
 [![Tests](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/actions/workflows/test.yml/badge.svg)](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/actions/workflows/test.yml)
 [![License: MPL-2.0](https://img.shields.io/badge/license-MPL--2.0-blue)](./LICENSE)
+[![CodeQL](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/actions/workflows/codeql.yml/badge.svg)](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/uttej-badwane/terraform-provider-anthropic-enterprise/badge)](https://scorecard.dev/viewer/?uri=github.com/uttej-badwane/terraform-provider-anthropic-enterprise)
 
 **[Documentation on the Terraform Registry](https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest/docs)** ·
 [Getting started](https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest/docs/guides/getting-started) ·
@@ -12,6 +14,18 @@
 Manage an Anthropic organization with Terraform through the [Admin API](https://platform.claude.com/docs/en/manage-claude/admin-api): workspaces, workspace members, invites, users, API key status, service accounts, workload identity federation, customer-managed encryption keys, and, for Claude Enterprise organizations, RBAC groups and per-user spend limits.
 
 Built on the Terraform Plugin Framework (protocol 6). Works with Terraform 1.13+ and OpenTofu 1.11+. Both floors are exercised in CI. OpenTofu earlier than 1.11 rejects the write-only attributes that `anthropic_vault_credential` and `anthropic_deployment` rely on.
+
+OpenTofu users: the provider is not yet listed in the OpenTofu registry (a listing request is in progress). Until it is, name the Terraform registry explicitly in `source`, which OpenTofu supports as-is:
+
+```hcl
+terraform {
+  required_providers {
+    anthropic = {
+      source = "registry.terraform.io/uttej-badwane/anthropic-enterprise"
+    }
+  }
+}
+```
 
 The provider is published as `uttej-badwane/anthropic-enterprise`. Its resource and data source types use the `anthropic_` prefix, so declare it with the local name `anthropic` exactly as in the example below; Terraform maps `anthropic_*` types to that local name.
 
@@ -135,6 +149,21 @@ of them.
 
 [CONTRIBUTING.md](./CONTRIBUTING.md) covers the workflow, how to run the suite,
 and how to drive the provider against the standalone mock server.
+
+## Security
+
+Read [SECURITY.md](./SECURITY.md) for the disclosure process and what is in scope. In short: no secret reaches state or logs, credentials only travel to the configured `https` base URL, redirects are refused, and every URL attribute that decides where a token goes must be `https`.
+
+Releases are GPG-signed (verified by the registry on ingest) and carry SLSA build provenance. To check a download:
+
+```sh
+gh attestation verify terraform-provider-anthropic-enterprise_<version>_<os>_<arch>.zip \
+  --repo uttej-badwane/terraform-provider-anthropic-enterprise
+```
+
+## Governance
+
+One maintainer today ([@uttej-badwane](https://github.com/uttej-badwane)). Every change, including the maintainer's own, lands through a pull request with the full check suite green; `main` is protected and releases run in a gated environment. The plan for growing that is in [ROADMAP.md](./ROADMAP.md): regular contributors are invited to become maintainers with review and release rights, so the project does not depend on one person.
 
 ## Development
 
