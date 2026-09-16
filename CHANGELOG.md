@@ -2,6 +2,14 @@
 
 CHORE:
 
+* Record the conventions and the traps that have actually cost time in
+  `CONTRIBUTING.md` — generated docs versus templates, error-expecting tests,
+  diagnostic line wrapping in `ExpectError` patterns, required checks versus
+  path-filtered workflows, and that `good first issue` items are reserved for
+  contributors
+* Add a short `CLAUDE.md` orienting coding agents in the repository layout and
+  pointing them at `CONTRIBUTING.md` for the rules
+
 * Add a Contributing section to the README pointing at the open `good first
   issue` and `help wanted` lists, with badges that track their counts, and say
   plainly that no Anthropic account is needed to contribute

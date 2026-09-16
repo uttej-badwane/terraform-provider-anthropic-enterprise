@@ -88,4 +88,18 @@ When `ANTHROPIC_API_KEY` (a regular workspace key) is also exported, `make testa
 * Every resource supports `terraform import`; composite ids use `parent_id/child_id`.
 * Archive-only API objects (workspaces, service accounts, federation issuers and rules) say so in their description and remove themselves from state when archived out of band.
 * Examples use placeholder identifiers (`wrkspc_...`, `user_...`, `example.com`) only.
-* Add a `CHANGELOG.md` entry under `## Unreleased` for user-visible changes.
+* Add a `CHANGELOG.md` entry under `## Unreleased` for user-visible changes. Never edit a section for a version that has already shipped: it records what that release contained, not what the tree looks like afterwards.
+
+## Things that catch people out
+
+Each of these has cost someone real time. They are not obvious from reading the code.
+
+* **`docs/` is generated output and tfplugindocs deletes anything it does not own.** Static pages such as guides belong in `templates/guides/`; a file created directly under `docs/guides/` disappears on the next `make generate`. Run `make generate` and commit the rendered result alongside the template.
+* **Subcategories are applied after generation.** `scripts/set-subcategories.sh` maps every page to a registry sidebar section, and an unmapped page is a hard error rather than a silent fallback. A new resource or data source needs an entry there.
+* **A test step that expects an error must be its own test function.** The post-test destroy re-runs the last configuration, so grouping an error case with a success case replays the wrong one.
+* **`ExpectError` patterns must tolerate line wrapping.** Terraform wraps diagnostic text at a width that depends on the surrounding message, so a literal space between two words may become a newline. Match `\s+` instead. This broke CI on Linux while passing on macOS, because the temp directory path lengths differ.
+* **An Optional and Computed `SingleNestedAttribute` needs every nested attribute Optional and Computed**, or Terraform core reports a perpetual diff.
+* **Never use `pull_request_target` in a workflow.** Fork pull requests currently run with a read-only token and no access to secrets, which is what makes it safe to run CI on them automatically. `pull_request_target` would hand fork code the repository's secrets.
+* **Do not path-filter a workflow whose checks are required by branch protection.** A pull request that matches the filter triggers no workflow, the required check never reports, and the pull request is blocked indefinitely.
+* **Squash merges mean `git branch -d` will not recognise a merged branch.** Confirm the content is on `main` before reaching for `-D`.
+* **Issues labelled `good first issue` are reserved for contributors.** Do not implement one without claiming it in the issue first. This has already cost an outside contributor their work.
