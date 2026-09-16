@@ -1,3 +1,12 @@
+## Unreleased
+
+CHORE:
+
+* The mock server documentation in `CONTRIBUTING.md` is now the version
+  contributed in [#14](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/pull/14),
+  which was opened before the equivalent in-house change was merged. Thanks to
+  @Rayan-and-beyond
+
 ## v0.3.0 (2026-09-16)
 
 ENHANCEMENTS:
@@ -18,6 +27,9 @@ BUG FIXES:
 
 CHORE:
 
+* Document the standalone mock server in `CONTRIBUTING.md`. It runs the
+  acceptance suite's mock as a real HTTP server, so the provider can be driven
+  end to end with no Anthropic credentials ([#8](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/8))
 * Run the acceptance suite against OpenTofu in CI, on the 1.11 floor and on a
   current release. The suite already supported it through
   `TF_ACC_PROVIDER_HOST` and `TF_ACC_TERRAFORM_PATH`; nothing exercised it, which
