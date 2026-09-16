@@ -1,5 +1,45 @@
 # Contributing
 
+## Proposing a change
+
+Changes land through pull requests, including documentation-only ones.
+
+```sh
+git checkout -b short-descriptive-branch-name
+# make the change
+make test testacc lint generate
+git commit
+gh pr create --fill
+```
+
+Before opening the pull request:
+
+* `make generate` has been run and any resulting `docs/` changes are committed.
+  Documentation is generated from the schemas and examples; editing `docs/` by
+  hand is undone by the next generation. Static pages such as guides live in
+  `templates/guides/`, because tfplugindocs treats `docs/` as output and
+  deletes anything it does not own.
+* There is a `CHANGELOG.md` entry under `## Unreleased` for anything a user
+  would notice.
+* No credentials, organization ids, user ids, email addresses or workspace
+  names appear anywhere in the diff. Examples use placeholders
+  (`wrkspc_...`, `user_...`, `example.com`).
+
+The pull request template lists the same checks. CI runs the build, the linter,
+a vulnerability scan, documentation generation and the acceptance suite against
+the mock on three Terraform versions; all of it must pass before merge.
+
+## Where to start
+
+* Issues labelled **good first issue** are scoped to one resource or one
+  document and need no access to a real organization.
+* Documentation is the easiest place to help. The guides in `templates/guides/`
+  and the `MarkdownDescription` on any attribute are fair game, and the mock
+  makes it possible to verify an example without an Anthropic account.
+* Adding a resource or data source? Open an issue first with the API endpoint
+  that backs it. Several organization features are read-only in the API and
+  cannot be managed here; the README lists what is deliberately not covered.
+
 ## Development
 
 The local checkout can live in any directory. Only the GitHub repository name matters: the Terraform Registry requires it to be `terraform-provider-anthropic-enterprise`, and the Go module path and goreleaser `project_name` already reflect that. Resource types keep the `anthropic_` prefix, so configurations declare the provider with the local name `anthropic`.

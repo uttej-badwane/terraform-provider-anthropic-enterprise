@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest/docs
+    about: Reference for every resource and data source, generated from the schemas.
+  - name: Which credential do I need?
+    url: https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest/docs/guides/credentials
+    about: Most authentication errors are a credential of the wrong class. Start here.
+  - name: Adopting an organization you already have
+    url: https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest/docs/guides/import-existing-organization
+    about: Import blocks, id formats and the order to adopt existing objects in.
+  - name: Report a security vulnerability
+    url: https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/security/advisories/new
+    about: Please report privately rather than opening a public issue.
