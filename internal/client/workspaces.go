@@ -19,7 +19,7 @@ func (c *Client) ListWorkspaces(ctx context.Context, includeArchived bool) ([]Wo
 // CreateWorkspace creates a workspace.
 func (c *Client) CreateWorkspace(ctx context.Context, in WorkspaceCreate) (*Workspace, error) {
 	var out Workspace
-	if err := c.post(ctx, CredAdmin, orgPath+"/workspaces", in, &out); err != nil {
+	if err := c.create(ctx, CredAdmin, orgPath+"/workspaces", in, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -62,7 +62,7 @@ func (c *Client) ListWorkspaceMembers(ctx context.Context, workspaceID string) (
 // AddWorkspaceMember adds a user to a workspace.
 func (c *Client) AddWorkspaceMember(ctx context.Context, workspaceID string, in WorkspaceMemberAdd) (*WorkspaceMember, error) {
 	var out WorkspaceMember
-	if err := c.post(ctx, CredAdmin, workspacePath(workspaceID)+"/members", in, &out); err != nil {
+	if err := c.create(ctx, CredAdmin, workspacePath(workspaceID)+"/members", in, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil
@@ -101,7 +101,7 @@ func (c *Client) ListWorkspaceServiceAccounts(ctx context.Context, workspaceID s
 // AddWorkspaceServiceAccount grants a service account a role in a workspace.
 func (c *Client) AddWorkspaceServiceAccount(ctx context.Context, workspaceID string, in ServiceAccountWorkspaceMemberAdd) (*ServiceAccountWorkspaceMember, error) {
 	var out ServiceAccountWorkspaceMember
-	if err := c.post(ctx, CredOAuth, workspacePath(workspaceID)+"/service_accounts", in, &out); err != nil {
+	if err := c.create(ctx, CredOAuth, workspacePath(workspaceID)+"/service_accounts", in, &out); err != nil {
 		return nil, err
 	}
 	return &out, nil

@@ -2,6 +2,22 @@
 
 SECURITY:
 
+* Refuse HTTP redirects instead of following them. Go's HTTP client strips only
+  `Authorization` and `Cookie` when a redirect changes host, so a redirect from
+  the configured `base_url` would have replayed `X-Api-Key` (five of the six
+  credential classes) on whatever host the redirect named. A 3xx now surfaces
+  as an API error
+* Validate `base_url`: the scheme must be `https`, with `http` accepted only for
+  loopback addresses so the bundled mock server keeps working, and a URL with
+  embedded credentials is rejected. The error text never repeats the value.
+  Previously any parseable URL was accepted, including `http://` to a remote
+  host, which sent the Admin key in cleartext
+* Stop echoing non-JSON error bodies into diagnostics. A 5xx page from a proxy
+  or gateway in front of the API is now logged at debug level only; the API's
+  own error envelope is still surfaced verbatim
+* Mask every configured credential by value in provider logs. The previous
+  field-key masking never matched a logged field and did not reach request
+  contexts
 * Require `https://` on every attribute that decides where a token or a signing
   key goes: `anthropic_federation_issuer.jwks.url` and `jwks.discovery_base`
   (where JWT signing keys are fetched from), `anthropic_vault_credential`
@@ -29,6 +45,21 @@ ENHANCEMENTS:
 * Warn in the plan when `anthropic_compliance_settings` is about to move to
   `disabled`, since that stops audit-log export for the whole organization
 
+BUG FIXES:
+
+* Cap `Retry-After` at the 20 second retry ceiling. The default backoff honoured
+  the header unbounded, so a `429` or `503` carrying a large value parked the
+  apply for as long as the server asked
+* Do not replay a create after a `5xx` or a mid-flight transport error. The
+  server may have committed the write before failing, and a replay created a
+  second object that Terraform never learned about. Creates are still retried
+  on `429` and when the connection could not be opened at all; updates,
+  archives and reads keep the previous retry behaviour
+* Bound pagination at 1000 pages and stop when the server returns the same
+  cursor twice, instead of looping and accumulating memory forever
+* Close the response body when a request fails after a response arrived, and
+  report a body over 16 MiB as such rather than as a JSON decode error
+
 CHORE:
 
 * Record the conventions and the traps that have actually cost time in
@@ -38,14 +69,12 @@ CHORE:
   contributors
 * Add a short `CLAUDE.md` orienting coding agents in the repository layout and
   pointing them at `CONTRIBUTING.md` for the rules
-
 * Add a Contributing section to the README pointing at the open `good first
   issue` and `help wanted` lists, with badges that track their counts, and say
   plainly that no Anthropic account is needed to contribute
 * Stop path-filtering the test workflow. `paths-ignore: README.md` meant a
   README-only pull request triggered no workflows, so the required status checks
   never reported and branch protection blocked the pull request indefinitely
-
 * The mock server documentation in `CONTRIBUTING.md` is now the version
   contributed in [#14](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/pull/14),
   which was opened before the equivalent in-house change was merged. Thanks to
