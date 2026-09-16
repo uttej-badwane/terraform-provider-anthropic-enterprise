@@ -61,6 +61,44 @@ cd examples/resources/anthropic_workspace
 terraform plan                      # no `terraform init` with dev_overrides
 ```
 
+### Trying the provider without an Anthropic account
+
+The mock that backs the acceptance suite also runs as a standalone server, so
+the provider can be driven end to end with the real `terraform` or `tofu` CLI
+and no Anthropic credentials at all:
+
+```sh
+go run ./internal/mock/cmd/mockserver -addr 127.0.0.1:8787
+```
+
+It prints the base URL and a credential for each class it serves:
+
+```
+mock Admin API listening on http://127.0.0.1:8787
+export ANTHROPIC_BASE_URL=http://127.0.0.1:8787
+export ANTHROPIC_ADMIN_API_KEY=sk-ant-admin-test-0000
+export ANTHROPIC_AUTH_TOKEN=test-org-admin-oauth-token
+export ANTHROPIC_ENTERPRISE_API_KEY=sk-ant-api01-enterprise-test-0000
+```
+
+Paste those exports into a second shell, point Terraform at the locally built
+provider, and plan against it:
+
+```sh
+make install
+eval "$(make -s dev-override)"
+cd examples/resources/anthropic_workspace
+terraform plan
+```
+
+The mock enforces the same credential classes, beta headers, validation rules
+and archive semantics as the real APIs, so a configuration that plans and
+applies here behaves the same against an organization. It holds state in
+memory, so restarting the server resets everything.
+
+This is the recommended way to work on a resource, a data source or an example
+when you do not have an Anthropic organization to test against.
+
 ## Live acceptance tests
 
 `make testacc-live` runs the `TestAccLive*` subset against a real organization. It only reads data sources and creates, renames and archives objects whose names start with `tf-acc-`. Export `ANTHROPIC_ADMIN_API_KEY` (and optionally `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_ENTERPRISE_API_KEY`) in the shell before running it. Never point it at an organization you are not allowed to modify.
