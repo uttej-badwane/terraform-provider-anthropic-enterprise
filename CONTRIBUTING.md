@@ -61,6 +61,14 @@ cd examples/resources/anthropic_workspace
 terraform plan                      # no `terraform init` with dev_overrides
 ```
 
+Run the standalone mock Admin API for local development:
+
+```sh
+go run ./internal/mock/cmd/mockserver -addr 127.0.0.1:8787
+```
+
+The mock server prints the local endpoint and the environment variables needed by the provider. Set the printed `ANTHROPIC_BASE_URL` and test credentials in your shell before running provider commands against the mock.
+
 ## Live acceptance tests
 
 `make testacc-live` runs the `TestAccLive*` subset against a real organization. It only reads data sources and creates, renames and archives objects whose names start with `tf-acc-`. Export `ANTHROPIC_ADMIN_API_KEY` (and optionally `ANTHROPIC_AUTH_TOKEN`, `ANTHROPIC_ENTERPRISE_API_KEY`) in the shell before running it. Never point it at an organization you are not allowed to modify.
