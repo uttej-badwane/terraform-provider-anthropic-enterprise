@@ -1,3 +1,14 @@
+## Unreleased
+
+ENHANCEMENTS:
+
+* Detect a credential of the wrong class at configure time and name the
+  attribute and what it expects, instead of letting the API answer with a bare
+  `401 API key is invalid` that says nothing about which attribute is at fault.
+  Only the two unambiguous swaps are rejected — an Admin key in `api_key` and a
+  regular API key in `admin_api_key` — because refusing a key that would have
+  worked is worse than letting the API decide ([#7](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/7))
+
 ## v0.2.0 (2026-09-16)
 
 DOCUMENTATION:
