@@ -1,5 +1,14 @@
 # Terraform Provider: Anthropic Enterprise
 
+[![Terraform Registry](https://img.shields.io/github/v/release/uttej-badwane/terraform-provider-anthropic-enterprise?label=registry&color=7b42bc)](https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest)
+[![Tests](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/actions/workflows/test.yml/badge.svg)](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/actions/workflows/test.yml)
+[![License: MPL-2.0](https://img.shields.io/badge/license-MPL--2.0-blue)](./LICENSE)
+
+**[Documentation on the Terraform Registry](https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest/docs)** ·
+[Getting started](https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest/docs/guides/getting-started) ·
+[Choosing credentials](https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest/docs/guides/credentials) ·
+[Adopting an existing organization](https://registry.terraform.io/providers/uttej-badwane/anthropic-enterprise/latest/docs/guides/import-existing-organization)
+
 Manage an Anthropic organization with Terraform through the [Admin API](https://platform.claude.com/docs/en/manage-claude/admin-api): workspaces, workspace members, invites, users, API key status, service accounts, workload identity federation, customer-managed encryption keys, and, for Claude Enterprise organizations, RBAC groups and per-user spend limits.
 
 Built on the Terraform Plugin Framework (protocol 6). Works with Terraform 1.13+ and OpenTofu 1.9+.

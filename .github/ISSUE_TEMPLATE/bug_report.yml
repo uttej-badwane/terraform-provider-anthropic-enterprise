@@ -1,0 +1,82 @@
+name: Bug report
+description: Something in the provider behaves differently than documented.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file this.
+
+        **Please do not paste credentials, organization ids, user ids, email
+        addresses or workspace names.** Terraform debug output contains request
+        and response bodies; redact it before posting.
+
+  - type: input
+    id: provider_version
+    attributes:
+      label: Provider version
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: terraform_version
+    attributes:
+      label: Terraform or OpenTofu version
+      description: Output of `terraform version` or `tofu version`.
+      placeholder: "Terraform v1.16.2"
+    validations:
+      required: true
+
+  - type: input
+    id: resource
+    attributes:
+      label: Affected resource or data source
+      placeholder: "anthropic_workspace_member"
+    validations:
+      required: true
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration
+      description: The smallest configuration that reproduces this, with identifiers replaced by placeholders.
+      render: terraform
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include the error message verbatim if there is one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. terraform apply
+        2. Change ... in the configuration
+        3. terraform plan
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Debug output
+      description: |
+        Optional. `TF_LOG=DEBUG terraform apply` written to a file, redacted and
+        attached as a gist. Do not paste it inline if it is long.
+    validations:
+      required: false

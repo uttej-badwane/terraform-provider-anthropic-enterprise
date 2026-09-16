@@ -1,0 +1,47 @@
+name: Feature request
+description: Ask for a new resource, data source or attribute.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The provider covers what the Anthropic APIs expose a write endpoint for.
+        Several organization features — rate-limit overrides, custom roles, SCIM
+        groups, SSO, IP allowlists, retention and the creation of Admin,
+        Compliance or Analytics keys — are read-only or absent in the API, so
+        they cannot be managed here until Anthropic adds an endpoint. The README
+        lists what is deliberately not covered and why.
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use case
+      description: What are you trying to accomplish? Describe the goal rather than the implementation.
+    validations:
+      required: true
+
+  - type: input
+    id: endpoint
+    attributes:
+      label: API endpoint
+      description: If you know the Anthropic API endpoint that backs this, name it. It is the quickest way to confirm the feature is possible.
+      placeholder: "POST /v1/organizations/..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: configuration
+    attributes:
+      label: Configuration you would like to write
+      description: Sketch the HCL as you imagine it. It does not need to be exact.
+      render: terraform
+    validations:
+      required: false
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Current workaround
+      description: How are you handling this today, if at all?
+    validations:
+      required: false

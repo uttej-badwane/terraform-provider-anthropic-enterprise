@@ -1,3 +1,26 @@
+## Unreleased
+
+DOCUMENTATION:
+
+* Group the generated resource and data source pages into registry
+  subcategories (Console Organization, Workspaces, Service Accounts and
+  Federation, Claude Enterprise, Compliance, Usage and Analytics, Managed
+  Agents, Skills), so the registry sidebar is navigable rather than one flat
+  list of ninety pages
+* **New Guide:** Getting started
+* **New Guide:** Choosing credentials — which credential class reaches which
+  resource, how to obtain each, and how to read the resulting errors
+* **New Guide:** Adopting an existing organization — `import` blocks,
+  `-generate-config-out`, the import id format for every resource, and the
+  order to adopt them in
+* **New Example:** `examples/complete` — a workspace, a member, and a service
+  account assumed by GitHub Actions through workload identity federation
+* Add registry, CI and licence badges and guide links to the README
+
+CHORE:
+
+* Add issue and pull request templates, `SECURITY.md` and `CODE_OF_CONDUCT.md`
+
 ## v0.1.0 (2026-09-15)
 
 FEATURES:
