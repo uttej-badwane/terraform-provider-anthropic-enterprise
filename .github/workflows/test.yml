@@ -100,3 +100,38 @@ jobs:
           TF_ACC: "1"
         run: go test -v -cover ./internal/provider/
         timeout-minutes: 10
+
+  # The README states the provider works with OpenTofu, so CI has to show it.
+  # The suite drives whichever binary TF_ACC_TERRAFORM_PATH names, and resolves
+  # the provider from the host named by TF_ACC_PROVIDER_HOST, which has to be
+  # OpenTofu's registry rather than Terraform's.
+  test-opentofu:
+    name: 'Acceptance Tests: OpenTofu ${{ matrix.opentofu }}'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        opentofu:
+          # 1.11 is the floor: write-only attributes, which the vault credential
+          # and deployment resources rely on, are rejected before it.
+          - '1.11.*'
+          - '1.12.*'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - uses: opentofu/setup-opentofu@a1320f892987e89d278cc92dc5adc984fb93aca4 # v2.0.2
+        with:
+          tofu_version: ${{ matrix.opentofu }}
+          tofu_wrapper: false
+      - run: go mod download
+      - env:
+          TF_ACC: "1"
+          TF_ACC_PROVIDER_HOST: registry.opentofu.org
+        run: |
+          TF_ACC_TERRAFORM_PATH="$(which tofu)" go test -v -cover ./internal/provider/
+        timeout-minutes: 10

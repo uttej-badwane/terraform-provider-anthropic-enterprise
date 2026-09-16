@@ -1,11 +1,32 @@
 ## Unreleased
 
+ENHANCEMENTS:
+
+* Detect a credential of the wrong class at configure time and name the
+  attribute and what it expects, instead of letting the API answer with a bare
+  `401 API key is invalid` that says nothing about which attribute is at fault.
+  Only the two unambiguous swaps are rejected — an Admin key in `api_key` and a
+  regular API key in `admin_api_key` — because refusing a key that would have
+  worked is worse than letting the API decide ([#7](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/7))
+
+BUG FIXES:
+
+* Correct the documented OpenTofu floor from 1.9 to 1.11. Releases before 1.11
+  reject the write-only attributes that `anthropic_vault_credential` and
+  `anthropic_deployment` rely on, so the previous claim never held for a
+  configuration that used them ([#6](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/6))
+
 CHORE:
 
+* Run the acceptance suite against OpenTofu in CI, on the 1.11 floor and on a
+  current release. The suite already supported it through
+  `TF_ACC_PROVIDER_HOST` and `TF_ACC_TERRAFORM_PATH`; nothing exercised it, which
+  is how the inaccurate floor above went unnoticed ([#6](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/6))
 * Document the standalone mock server in `CONTRIBUTING.md`. It runs the
   acceptance suite's mock as a real HTTP server, so the provider can be driven
   end to end with no Anthropic credentials — the fastest way to work on it
   without an organization to test against ([#8](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/8))
+
 
 ## v0.2.0 (2026-09-16)
 
