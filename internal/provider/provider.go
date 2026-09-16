@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -107,6 +108,21 @@ func (p *AnthropicProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 	}
 }
 
+// credentialMismatchSummary heads the diagnostic raised when a credential
+// belongs to a different class than the attribute holding it.
+const credentialMismatchSummary = "Credential of the wrong class"
+
+// credentialMismatch describes one credential attribute and a key prefix that
+// certainly belongs to a different class.
+type credentialMismatch struct {
+	attribute string
+	env       string
+	value     string
+	set       bool
+	rejects   string
+	detail    string
+}
+
 func (p *AnthropicProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var cfg providerModel
 	resp.Diagnostics.Append(req.Config.Get(ctx, &cfg)...)
@@ -147,6 +163,51 @@ func (p *AnthropicProvider) Configure(ctx context.Context, req provider.Configur
 			"Set at least one of admin_api_key (ANTHROPIC_ADMIN_API_KEY), oauth_token (ANTHROPIC_AUTH_TOKEN), "+
 				"enterprise_api_key (ANTHROPIC_ENTERPRISE_API_KEY), compliance_api_key (ANTHROPIC_COMPLIANCE_API_KEY), "+
 				"analytics_api_key (ANTHROPIC_ANALYTICS_API_KEY) or api_key (ANTHROPIC_API_KEY).")
+		return
+	}
+
+	// Each credential class has its own key prefix, and an API handed a key of
+	// the wrong class answers with a bare 401 that never mentions which
+	// attribute is at fault. Catch the two unambiguous swaps here so the error
+	// names the attribute and what it expects. Only a prefix that certainly
+	// belongs to another class is rejected: refusing a key that would in fact
+	// have worked is worse than letting the API answer.
+	for _, m := range []credentialMismatch{
+		{
+			attribute: "api_key",
+			env:       "ANTHROPIC_API_KEY",
+			value:     apiKey,
+			set:       !cfg.APIKey.IsNull(),
+			rejects:   "sk-ant-admin",
+			detail: "`api_key` expects a workspace API key (`sk-ant-api03-...`), but an Admin key was supplied. " +
+				"The Managed Agents and Skills APIs reject Admin keys. Use `admin_api_key` for Console-organization " +
+				"resources, and `api_key` for agents, environments, vaults, deployments, memory stores and skills.",
+		},
+		{
+			attribute: "admin_api_key",
+			env:       "ANTHROPIC_ADMIN_API_KEY",
+			value:     admin,
+			set:       !cfg.AdminAPIKey.IsNull(),
+			rejects:   "sk-ant-api0",
+			detail: "`admin_api_key` expects an Admin API key (`sk-ant-admin01-...`), but a regular API key was " +
+				"supplied. Console-organization endpoints reject it. Use `api_key` for the Managed Agents and Skills " +
+				"APIs, `enterprise_api_key` for Claude Enterprise, and `admin_api_key` for the Console organization.",
+		},
+	} {
+		if m.value == "" || !strings.HasPrefix(m.value, m.rejects) {
+			continue
+		}
+		detail := m.detail
+		if !m.set {
+			detail += fmt.Sprintf(" This value came from %s.", m.env)
+		}
+		if m.set {
+			resp.Diagnostics.AddAttributeError(path.Root(m.attribute), credentialMismatchSummary, detail)
+		} else {
+			resp.Diagnostics.AddError(credentialMismatchSummary, detail)
+		}
+	}
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
