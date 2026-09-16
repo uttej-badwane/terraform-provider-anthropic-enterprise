@@ -43,7 +43,7 @@ resource "anthropic_agent" "writer" {
 
 ### Optional
 
-- `delete_on_destroy` (Boolean) Delete the skill (all versions) on destroy. Defaults to `true`.
+- `delete_on_destroy` (Boolean) Delete the skill (all versions) on destroy. Defaults to `true`. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `display_name` (String) Display label, up to 255 characters. Defaults to the `SKILL.md` name. Cannot be changed after creation.
 
 ### Read-Only

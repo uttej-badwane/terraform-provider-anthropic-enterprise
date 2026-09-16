@@ -35,7 +35,7 @@ resource "anthropic_service_account" "ci_deploy" {
 
 ### Optional
 
-- `archive_on_destroy` (Boolean) Archive the service account when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state.
+- `archive_on_destroy` (Boolean) Archive the service account when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `description` (String) Free-text description. Removing it clears the description.
 - `organization_role` (String) Organization role: `developer` (default) or `admin`. Assigning `admin` requires an interactive token.
 

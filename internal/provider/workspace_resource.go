@@ -119,7 +119,7 @@ func (r *workspaceResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			},
 			"archive_on_destroy": schema.BoolAttribute{
 				MarkdownDescription: "Archive the workspace when the resource is destroyed. Defaults to `true`. " +
-					"When `false`, destroy only removes the resource from state.",
+					"When `false`, destroy only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.",
 				Optional: true,
 				Computed: true,
 				Default:  booldefault.StaticBool(true),
@@ -278,8 +278,7 @@ func (r *workspaceResource) Delete(ctx context.Context, req resource.DeleteReque
 
 func (r *workspaceResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	// archive_on_destroy has a default; make it explicit so the first plan is clean.
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("archive_on_destroy"), types.BoolValue(true))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("archive_on_destroy"), types.BoolValue(false))...)
 }
 
 // residencyParams builds the data_residency request block from the plan.

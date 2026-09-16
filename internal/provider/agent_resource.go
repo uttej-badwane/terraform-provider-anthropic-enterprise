@@ -176,7 +176,7 @@ func (r *agentResource) Schema(_ context.Context, _ resource.SchemaRequest, resp
 				Optional:            true,
 			},
 			"archive_on_destroy": schema.BoolAttribute{
-				MarkdownDescription: "Archive the agent on destroy. Defaults to `true`. When `false`, destroy only removes the resource from state.",
+				MarkdownDescription: "Archive the agent on destroy. Defaults to `true`. When `false`, destroy only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.",
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
@@ -428,7 +428,7 @@ func (r *agentResource) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 func (r *agentResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("archive_on_destroy"), types.BoolValue(true))...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("archive_on_destroy"), types.BoolValue(false))...)
 }
 
 // knownDiff reports a change only when the plan value is known.

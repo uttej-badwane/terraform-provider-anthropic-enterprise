@@ -158,11 +158,19 @@ rotation, or leave it and let the existing secret stand.
 new version by hashing the local directory. After importing, point `source_dir`
 at content matching what was uploaded, or the next apply creates a new version.
 
-**Destroy is not the inverse of import.** Removing an imported resource from
+**Destroy is not the inverse of import.** Removing a resource from
 configuration and applying will archive or delete a real object. Workspaces,
 service accounts, federation issuers and rules, agents and deployments archive
 irreversibly. If you only want Terraform to stop managing something, use a
 `removed` block with `lifecycle { destroy = false }`, not a plain deletion.
+
+To make that mistake harder right after adoption, every `archive_on_destroy` or
+`delete_on_destroy` attribute is imported as `false`, whatever its default.
+The first plan after an import therefore shows one change on each imported
+resource: the flag moving from `false` to its default of `true`. Read that line
+as a question. Apply it to accept the normal destroy behaviour, or set the
+attribute to `false` in configuration to keep the object safe from a later
+`terraform destroy`. Nothing is sent to the API either way.
 
 **Reports are point-in-time.** The usage, cost and analytics data sources
 re-read on every plan and their values change between runs. That is expected,

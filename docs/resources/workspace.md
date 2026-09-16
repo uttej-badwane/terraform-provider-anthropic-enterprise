@@ -47,7 +47,7 @@ resource "anthropic_workspace" "regulated" {
 ### Optional
 
 - `allowed_inference_geos` (List of String) Inference geographies the workspace may use (`global`, `us`). Omit for unrestricted.
-- `archive_on_destroy` (Boolean) Archive the workspace when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state.
+- `archive_on_destroy` (Boolean) Archive the workspace when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `default_inference_geo` (String) Default inference geography (`global` or `us`). Defaults to `global`.
 - `display_color` (String) Hex color shown in the Console (for example `#6C5BB9`). Assigned by the API when omitted.
 - `external_key_id` (String) Customer-managed encryption key to attach (`ekey_...`, see `anthropic_external_key`). Write-once: it can be set on an existing workspace that has none, but changing it forces a new workspace.

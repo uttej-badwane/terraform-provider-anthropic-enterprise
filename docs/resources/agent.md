@@ -59,7 +59,7 @@ resource "anthropic_agent" "reviewer" {
 
 ### Optional
 
-- `archive_on_destroy` (Boolean) Archive the agent on destroy. Defaults to `true`. When `false`, destroy only removes the resource from state.
+- `archive_on_destroy` (Boolean) Archive the agent on destroy. Defaults to `true`. When `false`, destroy only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `description` (String) What the agent does, up to 2048 characters.
 - `mcp_servers` (Attributes List) MCP servers the agent connects to (max 20). Names must be unique and referenced from `tools`. (see [below for nested schema](#nestedatt--mcp_servers))
 - `metadata` (Map of String) Key/value metadata, max 16 pairs.
