@@ -32,7 +32,7 @@ func TestAccProviderBaseURL_userinfoRejected(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Config: `
 provider "anthropic" {
-  base_url = "https://user:secret@api.example.com"
+  base_url = "https://svc-user@api.example.com"
 }
 data "anthropic_organization" "test" {}
 `,
