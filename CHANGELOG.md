@@ -5,7 +5,10 @@ CHORE:
 * Run the acceptance suite against OpenTofu in CI, on the 1.9 floor the README
   claims and on a current release. The suite already supported it through
   `TF_ACC_PROVIDER_HOST` and `TF_ACC_TERRAFORM_PATH`; nothing exercised it, so
-  the compatibility claim was untested ([#6](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/6))
+  the compatibility claim was untested. It was also wrong: the README promised
+  OpenTofu 1.9+, but releases before 1.11 reject the write-only attributes that
+  `anthropic_vault_credential` and `anthropic_deployment` rely on. The stated
+  floor is now 1.11, and CI holds it to that ([#6](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/6))
 
 ## v0.2.0 (2026-09-16)
 
