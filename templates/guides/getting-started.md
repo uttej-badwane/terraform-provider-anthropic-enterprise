@@ -114,3 +114,6 @@ organization you care about.
 - [Choosing credentials](./credentials) — which key reaches which resource.
 - [Adopting an existing organization](./import-existing-organization) — bring
   an organization you already have under Terraform without recreating anything.
+- [Managed Agents](./managed-agents) — agents, environments, vaults and
+  scheduled deployments, and the behaviours that differ from the rest of the
+  provider.
