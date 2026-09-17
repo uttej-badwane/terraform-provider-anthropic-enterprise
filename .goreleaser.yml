@@ -45,7 +45,8 @@ builds:
       goarch: s390x
   binary: '{{ .ProjectName }}_v{{ .Version }}'
 archives:
-- formats:
+- id: provider
+  formats:
   - zip
   name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
 sboms:
@@ -53,6 +54,12 @@ sboms:
   # attached to the GitHub release for anyone who audits what they install.
   - artifacts: archive
 checksum:
+  # Only the provider archives and the manifest. The Terraform Registry reads
+  # this file to find the artifacts it expects, and v0.4.0 was never ingested
+  # after the SBOMs began appearing here as fourteen extra entries. SBOMs stay
+  # attached to the release, they just do not belong in the registry's index.
+  ids:
+    - provider
   extra_files:
     - glob: 'terraform-registry-manifest.json'
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
