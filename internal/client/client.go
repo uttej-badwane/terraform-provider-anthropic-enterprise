@@ -90,6 +90,9 @@ type Config struct {
 	HTTPClient *http.Client
 	// MaxRetries overrides the default retry count; negative disables retries.
 	MaxRetries *int
+	// RequestTimeout overrides the per-request timeout. Ignored when
+	// HTTPClient is supplied, since that client carries its own.
+	RequestTimeout *time.Duration
 }
 
 // Client talks to the Admin API.
@@ -131,6 +134,9 @@ func New(cfg Config) (*Client, error) {
 		rc.HTTPClient = cfg.HTTPClient
 	} else {
 		rc.HTTPClient.Timeout = defaultTimeout
+		if cfg.RequestTimeout != nil {
+			rc.HTTPClient.Timeout = *cfg.RequestTimeout
+		}
 	}
 	// The API never redirects. Following one would replay X-Api-Key on the
 	// new host, because net/http strips only Authorization and Cookie when the

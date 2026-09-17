@@ -1,5 +1,15 @@
 ## Unreleased
 
+ENHANCEMENTS:
+
+* Add `request_timeout` and `max_retries` provider attributes, with
+  `ANTHROPIC_REQUEST_TIMEOUT` and `ANTHROPIC_MAX_RETRIES` as fallbacks. The
+  client already supported both and nothing set them, so the 60 second timeout
+  and four retries were unreachable from a configuration. `max_retries = 0`
+  attempts each request once, which is usually what a CI run wants; a value
+  that cannot be parsed is an error rather than a silent fallback
+  ([#18](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/18))
+
 BUG FIXES:
 
 * Renaming an `anthropic_external_key` no longer replaces the registration.

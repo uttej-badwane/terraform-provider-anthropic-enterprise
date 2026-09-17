@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
@@ -36,6 +40,8 @@ type providerModel struct {
 	AnalyticsAPIKey  types.String `tfsdk:"analytics_api_key"`
 	APIKey           types.String `tfsdk:"api_key"`
 	WorkspaceID      types.String `tfsdk:"workspace_id"`
+	RequestTimeout   types.String `tfsdk:"request_timeout"`
+	MaxRetries       types.Int64  `tfsdk:"max_retries"`
 }
 
 // New returns a provider factory for the given version string.
@@ -106,6 +112,19 @@ func (p *AnthropicProvider) Schema(_ context.Context, _ provider.SchemaRequest, 
 					"header. Required when `api_key` can access more than one workspace. Can also be set with `ANTHROPIC_WORKSPACE_ID`.",
 				Optional: true,
 			},
+			"request_timeout": schema.StringAttribute{
+				MarkdownDescription: "How long to wait for a single API request, as a Go duration such as `90s` or `2m`. " +
+					"Defaults to `60s`. Applies per attempt, so a run that retries can take longer than this in total. " +
+					"Can also be set with `ANTHROPIC_REQUEST_TIMEOUT`.",
+				Optional: true,
+			},
+			"max_retries": schema.Int64Attribute{
+				MarkdownDescription: "How many times to retry a request the API could not serve, such as a 429 or a 5xx. " +
+					"Defaults to `4`. Set `0` to attempt each request once and fail fast, which is often what a CI run wants. " +
+					"Can also be set with `ANTHROPIC_MAX_RETRIES`.",
+				Optional:   true,
+				Validators: []validator.Int64{int64validator.AtLeast(0)},
+			},
 			"analytics_api_key": schema.StringAttribute{
 				MarkdownDescription: "Claude Enterprise Analytics API key (`read:analytics`). Used by the `anthropic_analytics_*` data " +
 					"sources. Falls back to `enterprise_api_key`. Can also be set with `ANTHROPIC_ANALYTICS_API_KEY`.",
@@ -147,6 +166,7 @@ func (p *AnthropicProvider) Configure(ctx context.Context, req provider.Configur
 		"analytics_api_key":  cfg.AnalyticsAPIKey,
 		"api_key":            cfg.APIKey,
 		"workspace_id":       cfg.WorkspaceID,
+		"request_timeout":    cfg.RequestTimeout,
 	} {
 		if v.IsUnknown() {
 			resp.Diagnostics.AddAttributeError(path.Root(name), "Unknown provider configuration value",
@@ -165,6 +185,11 @@ func (p *AnthropicProvider) Configure(ctx context.Context, req provider.Configur
 	analytics := stringOrEnv(cfg.AnalyticsAPIKey, "ANTHROPIC_ANALYTICS_API_KEY")
 	apiKey := stringOrEnv(cfg.APIKey, "ANTHROPIC_API_KEY")
 	workspaceID := stringOrEnv(cfg.WorkspaceID, "ANTHROPIC_WORKSPACE_ID")
+
+	requestTimeout, maxRetries := tuningOrEnv(cfg, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	if admin == "" && oauth == "" && enterprise == "" && compliance == "" && analytics == "" && apiKey == "" {
 		resp.Diagnostics.AddError("Missing credentials",
@@ -238,6 +263,8 @@ func (p *AnthropicProvider) Configure(ctx context.Context, req provider.Configur
 		AnalyticsAPIKey:  analytics,
 		APIKey:           apiKey,
 		WorkspaceID:      workspaceID,
+		RequestTimeout:   requestTimeout,
+		MaxRetries:       maxRetries,
 		UserAgent:        fmt.Sprintf("terraform-provider-anthropic-enterprise/%s (terraform %s)", p.version, req.TerraformVersion),
 	})
 	if err != nil {
@@ -276,6 +303,50 @@ var (
 
 func registerResource(f func() resource.Resource)       { resources = append(resources, f) }
 func registerDataSource(f func() datasource.DataSource) { dataSources = append(dataSources, f) }
+
+// tuningOrEnv resolves request_timeout and max_retries from configuration or
+// the environment. Both are optional; a nil result means "use the client's
+// default". A value that cannot be parsed is an error rather than a silent
+// fallback, because silently ignoring a timeout someone set is worse than
+// refusing to start.
+func tuningOrEnv(cfg providerModel, diags *diag.Diagnostics) (*time.Duration, *int) {
+	var timeout *time.Duration
+	if raw := stringOrEnv(cfg.RequestTimeout, "ANTHROPIC_REQUEST_TIMEOUT"); raw != "" {
+		d, err := time.ParseDuration(raw)
+		switch {
+		case err != nil:
+			diags.AddAttributeError(path.Root("request_timeout"), "Invalid request timeout",
+				fmt.Sprintf("%q is not a duration. Use a Go duration such as \"90s\" or \"2m\".", raw))
+		case d <= 0:
+			diags.AddAttributeError(path.Root("request_timeout"), "Invalid request timeout",
+				fmt.Sprintf("%q must be positive.", raw))
+		default:
+			timeout = &d
+		}
+	}
+
+	var retries *int
+	raw := ""
+	if !cfg.MaxRetries.IsNull() {
+		raw = strconv.FormatInt(cfg.MaxRetries.ValueInt64(), 10)
+	} else {
+		raw = os.Getenv("ANTHROPIC_MAX_RETRIES")
+	}
+	if raw != "" {
+		n, err := strconv.Atoi(raw)
+		switch {
+		case err != nil:
+			diags.AddAttributeError(path.Root("max_retries"), "Invalid retry count",
+				fmt.Sprintf("%q is not a whole number.", raw))
+		case n < 0:
+			diags.AddAttributeError(path.Root("max_retries"), "Invalid retry count",
+				fmt.Sprintf("%d is negative. Use 0 to attempt each request once.", n))
+		default:
+			retries = &n
+		}
+	}
+	return timeout, retries
+}
 
 func stringOrEnv(v types.String, env string) string {
 	if !v.IsNull() && v.ValueString() != "" {
