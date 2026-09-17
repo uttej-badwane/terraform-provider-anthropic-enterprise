@@ -11,6 +11,17 @@ BUG FIXES:
   it, since `anthropic_workspace.external_key_id` is write-once. The resource's
   own `Update` was unreachable as a result ([#20](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/20))
 
+CHORE:
+
+* Test the eventual-consistency helpers directly. `isNotYetVisible` recognises
+  the Admin API's propagation error by a substring of its message, which would
+  break silently if the wording changed; it and the retry and wait loops now
+  have unit tests covering the propagation error wrapped and unwrapped, other
+  400s, other statuses, non-API errors, retry-then-succeed, giving up with the
+  API's own error rather than a synthesised one, and context cancellation. The
+  loops take an explicit window so the timeout cases run in milliseconds rather
+  than the production twenty seconds ([#21](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/21))
+
 ## v0.4.1 (2026-09-17)
 
 BUG FIXES:
