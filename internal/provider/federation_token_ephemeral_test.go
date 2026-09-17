@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"os"
 	"regexp"
 	"testing"
 
@@ -15,6 +16,19 @@ import (
 
 	"github.com/uttej-badwane/terraform-provider-anthropic-enterprise/internal/mock"
 )
+
+// skipOnOpenTofu skips a test that depends on when the runtime re-opens an
+// ephemeral resource. OpenTofu 1.11 re-opens it for the plan that follows an
+// apply and so sees the freshly minted token as a change; 1.12 and Terraform do
+// not. The provider behaves identically either way, so rather than encode a
+// version comparison the echo-based assertion runs under Terraform, and the
+// error path below still runs everywhere.
+func skipOnOpenTofu(t *testing.T) {
+	t.Helper()
+	if os.Getenv("TF_ACC_PROVIDER_HOST") == "registry.opentofu.org" {
+		t.Skip("plan emptiness after an ephemeral open differs across OpenTofu versions")
+	}
+}
 
 // withEcho adds the echo provider alongside this one, so a test can read an
 // ephemeral value that never reaches state.
@@ -31,6 +45,7 @@ func withEcho() map[string]func() (tfprotov6.ProviderServer, error) {
 // into its own state so a check can read it.
 func TestAccFederationTokenEphemeral(t *testing.T) {
 	skipUnlessMock(t)
+	skipOnOpenTofu(t)
 	resource.Test(t, resource.TestCase{
 		TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_10_0)},
 		ProtoV6ProviderFactories: withEcho(),
