@@ -1,5 +1,16 @@
 ## Unreleased
 
+FEATURES:
+
+* **New Ephemeral Resource:** `anthropic_federation_token` exchanges an OIDC
+  assertion for a short-lived Anthropic access token under a federation rule
+  (`POST /v1/oauth/token`, the RFC 7523 `jwt-bearer` grant). The provider could
+  configure federation but not use it, so a pipeline still had to shell out to
+  get a usable credential. Ephemeral resources are never written to state or to
+  the plan, which is the point: the minted token lives only for the operation
+  that used it. The exchange deliberately sends no API key, because the
+  assertion is what authenticates it ([#22](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/22))
+
 ENHANCEMENTS:
 
 * Support `timeouts` blocks on the three resources that wait for the Admin API

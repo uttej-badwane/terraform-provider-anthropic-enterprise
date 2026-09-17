@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
@@ -283,11 +284,18 @@ func (p *AnthropicProvider) Configure(ctx context.Context, req provider.Configur
 	})
 
 	resp.DataSourceData = c
+	resp.EphemeralResourceData = c
 	resp.ResourceData = c
 }
 
 func (p *AnthropicProvider) Resources(_ context.Context) []func() resource.Resource {
 	return resources
+}
+
+// EphemeralResources returns values that are fetched for a run and never
+// written to state or the plan.
+func (p *AnthropicProvider) EphemeralResources(_ context.Context) []func() ephemeral.EphemeralResource {
+	return ephemeralResources
 }
 
 func (p *AnthropicProvider) DataSources(_ context.Context) []func() datasource.DataSource {
@@ -301,7 +309,12 @@ var (
 	dataSources []func() datasource.DataSource
 )
 
-func registerResource(f func() resource.Resource)       { resources = append(resources, f) }
+var ephemeralResources []func() ephemeral.EphemeralResource
+
+func registerResource(f func() resource.Resource) { resources = append(resources, f) }
+func registerEphemeralResource(f func() ephemeral.EphemeralResource) {
+	ephemeralResources = append(ephemeralResources, f)
+}
 func registerDataSource(f func() datasource.DataSource) { dataSources = append(dataSources, f) }
 
 // tuningOrEnv resolves request_timeout and max_retries from configuration or

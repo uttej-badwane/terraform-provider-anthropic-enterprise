@@ -36,7 +36,10 @@ subcategory_for() {
 }
 
 status=0
-for file in docs/resources/*.md docs/data-sources/*.md; do
+# Ephemeral resources render into their own directory, so they are globbed
+# alongside the others rather than being silently left ungrouped.
+shopt -s nullglob
+for file in docs/resources/*.md docs/data-sources/*.md docs/ephemeral-resources/*.md; do
   name="$(basename "$file" .md)"
   if ! subcategory="$(subcategory_for "$name")"; then
     echo "set-subcategories: no subcategory mapped for $file" >&2
