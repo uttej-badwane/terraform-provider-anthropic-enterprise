@@ -1,5 +1,14 @@
 ## Unreleased
 
+SECURITY:
+
+* Update `golang.org/x/crypto` to 0.56.0, `golang.org/x/mod` to 0.40.0 in both
+  modules and `github.com/yuin/goldmark` to 1.7.17 in the tooling module,
+  clearing five of the six advisories OSV reported against the dependency tree
+  (GO-2026-6354, GO-2026-6355, GO-2026-6179, GO-2026-6180, GO-2026-5320). All
+  are indirect dependencies and none were reachable from provider code, which is
+  why `govulncheck` reported clean while OSV did not
+
 CHORE:
 
 * Fuzz the JSON helpers that compare configuration against API responses.
