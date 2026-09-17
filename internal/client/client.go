@@ -54,6 +54,11 @@ const (
 	// control plane (/v1/agents, environments, vaults, deployments, memory
 	// stores) and the Skills API. Admin keys are rejected there.
 	CredAPIKey
+	// CredNone carries no credential. The federated token exchange is the one
+	// endpoint that needs this: the signed assertion in the body is what
+	// authenticates the caller, and sending a key alongside it would only widen
+	// what a compromised request could reach.
+	CredNone
 )
 
 func (c CredentialClass) String() string {
@@ -70,6 +75,8 @@ func (c CredentialClass) String() string {
 		return "analytics_api_key"
 	case CredAPIKey:
 		return "api_key"
+	case CredNone:
+		return "none"
 	}
 	return "unknown"
 }
@@ -202,6 +209,8 @@ func (c *Client) Has(class CredentialClass) bool {
 		return c.HasAnalytics()
 	case CredAPIKey:
 		return c.HasAPIKey()
+	case CredNone:
+		return true
 	}
 	return false
 }
@@ -298,6 +307,9 @@ func failedBeforeSend(err error) bool {
 
 func (c *Client) authorize(req *http.Request, class CredentialClass) error {
 	switch class {
+	case CredNone:
+		// Deliberately unauthenticated; the request body carries the assertion.
+		return nil
 	case CredAdmin:
 		if c.oauth != "" {
 			req.Header.Set("Authorization", "Bearer "+c.oauth)
