@@ -34,7 +34,14 @@ func isNotYetVisible(err error) bool {
 // retryUntilVisible runs op, retrying while the API says the membership is
 // not visible yet, until the consistency timeout elapses.
 func retryUntilVisible[T any](ctx context.Context, op func() (T, error)) (T, error) {
-	deadline := time.Now().Add(consistencyTimeout)
+	return retryUntilVisibleFor(ctx, consistencyTimeout, consistencyInterval, op)
+}
+
+// retryUntilVisibleFor is retryUntilVisible over an explicit window. op always
+// runs at least once, and the error from the final attempt is the one returned,
+// so a caller sees the API's own message rather than a synthesised timeout.
+func retryUntilVisibleFor[T any](ctx context.Context, timeout, interval time.Duration, op func() (T, error)) (T, error) {
+	deadline := time.Now().Add(timeout)
 	for {
 		out, err := op()
 		if err == nil || !isNotYetVisible(err) || time.Now().After(deadline) {
@@ -43,7 +50,7 @@ func retryUntilVisible[T any](ctx context.Context, op func() (T, error)) (T, err
 		select {
 		case <-ctx.Done():
 			return out, ctx.Err()
-		case <-time.After(consistencyInterval):
+		case <-time.After(interval):
 		}
 	}
 }
@@ -52,12 +59,19 @@ func retryUntilVisible[T any](ctx context.Context, op func() (T, error)) (T, err
 // elapses. It never fails: convergence problems surface as a normal diff on
 // the next plan instead of a hard error.
 func waitUntil(ctx context.Context, check func() bool) {
-	deadline := time.Now().Add(consistencyTimeout)
+	waitUntilFor(ctx, consistencyTimeout, consistencyInterval, check)
+}
+
+// waitUntilFor is waitUntil over an explicit window. Like waitUntil it never
+// reports failure: a window that elapses without convergence leaves the work
+// for the next plan.
+func waitUntilFor(ctx context.Context, timeout, interval time.Duration, check func() bool) {
+	deadline := time.Now().Add(timeout)
 	for !check() && time.Now().Before(deadline) {
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(consistencyInterval):
+		case <-time.After(interval):
 		}
 	}
 }
