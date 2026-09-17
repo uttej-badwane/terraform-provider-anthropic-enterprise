@@ -1,5 +1,16 @@
 ## Unreleased
 
+CHORE:
+
+* Fuzz the JSON helpers that compare configuration against API responses.
+  `jsonSubsetEqual` and `canonicalJSON` parse input the provider does not
+  control, so the targets assert they never panic, that a document is always a
+  subset of itself, that canonicalisation is idempotent, and that documents with
+  identical canonical forms always compare equal. Each survived roughly three
+  million executions; the seed corpus runs as part of the normal suite
+* Remove a useless assignment flagged by CodeQL in `anthropic_api_key`'s update
+  path, clearing the last open code scanning alert
+* Lint the workflow files with `actionlint` in CI
 SECURITY:
 
 * Refuse HTTP redirects instead of following them. Go's HTTP client strips only

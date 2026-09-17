@@ -151,8 +151,10 @@ func (r *apiKeyResource) Update(ctx context.Context, req resource.UpdateRequest,
 	if !plan.Status.IsUnknown() && !plan.Status.IsNull() && !plan.Status.Equal(state.Status) {
 		in.Status = stringPtr(plan.Status)
 	}
-	k := (*client.APIKey)(nil)
-	var err error
+	var (
+		k   *client.APIKey
+		err error
+	)
 	if in.Name != nil || in.Status != nil {
 		k, err = r.client.UpdateAPIKey(ctx, state.ID.ValueString(), in)
 	} else {
