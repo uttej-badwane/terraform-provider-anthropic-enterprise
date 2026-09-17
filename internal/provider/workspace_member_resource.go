@@ -2,7 +2,9 @@ package provider
 
 import (
 	"context"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -31,10 +33,11 @@ type workspaceMemberResource struct {
 }
 
 type workspaceMemberModel struct {
-	ID            types.String `tfsdk:"id"`
-	WorkspaceID   types.String `tfsdk:"workspace_id"`
-	UserID        types.String `tfsdk:"user_id"`
-	WorkspaceRole types.String `tfsdk:"workspace_role"`
+	ID            types.String   `tfsdk:"id"`
+	WorkspaceID   types.String   `tfsdk:"workspace_id"`
+	UserID        types.String   `tfsdk:"user_id"`
+	WorkspaceRole types.String   `tfsdk:"workspace_role"`
+	Timeouts      timeouts.Value `tfsdk:"timeouts"`
 }
 
 var workspaceMemberRoles = []string{"workspace_admin", "workspace_developer", "workspace_restricted_developer", "workspace_user"}
@@ -43,12 +46,17 @@ func (r *workspaceMemberResource) Metadata(_ context.Context, req resource.Metad
 	resp.TypeName = req.ProviderTypeName + "_workspace_member"
 }
 
-func (r *workspaceMemberResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *workspaceMemberResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Grants an organization member a role in a workspace.\n\n" +
 			"Requires `admin_api_key` or `oauth_token`.\n\n" +
 			"Organization admins and billing members hold their workspace access implicitly and cannot be managed here. " +
 			"`workspace_billing` is inherited from the organization role and cannot be assigned.",
+		Blocks: map[string]schema.Block{
+			// The Admin API is eventually consistent here, so update and delete
+			// wait for the change to become visible. These bound that wait.
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{Create: true, Update: true, Delete: true}),
+		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Composite id `workspace_id/user_id`.",
@@ -84,6 +92,11 @@ func (r *workspaceMemberResource) Create(ctx context.Context, req resource.Creat
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	wait, tdiags := plan.Timeouts.Create(ctx, consistencyTimeout)
+	resp.Diagnostics.Append(tdiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	m, err := r.client.AddWorkspaceMember(ctx, plan.WorkspaceID.ValueString(), client.WorkspaceMemberAdd{
 		UserID:        plan.UserID.ValueString(),
 		WorkspaceRole: plan.WorkspaceRole.ValueString(),
@@ -92,7 +105,7 @@ func (r *workspaceMemberResource) Create(ctx context.Context, req resource.Creat
 		apiErrorDiag(&resp.Diagnostics, "Error adding workspace member", err)
 		return
 	}
-	r.waitForRole(ctx, m.WorkspaceID, m.UserID, m.WorkspaceRole)
+	r.waitForRole(ctx, wait, m.WorkspaceID, m.UserID, m.WorkspaceRole)
 	flattenWorkspaceMember(m, &plan)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -122,7 +135,12 @@ func (r *workspaceMemberResource) Update(ctx context.Context, req resource.Updat
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	m, err := retryUntilVisible(ctx, func() (*client.WorkspaceMember, error) {
+	wait, tdiags := plan.Timeouts.Update(ctx, consistencyTimeout)
+	resp.Diagnostics.Append(tdiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	m, err := retryUntilVisibleFor(ctx, wait, consistencyInterval, func() (*client.WorkspaceMember, error) {
 		return r.client.UpdateWorkspaceMember(ctx, plan.WorkspaceID.ValueString(), plan.UserID.ValueString(),
 			client.WorkspaceRoleUpdate{WorkspaceRole: plan.WorkspaceRole.ValueString()})
 	})
@@ -130,7 +148,7 @@ func (r *workspaceMemberResource) Update(ctx context.Context, req resource.Updat
 		apiErrorDiag(&resp.Diagnostics, "Error updating workspace member", err)
 		return
 	}
-	r.waitForRole(ctx, m.WorkspaceID, m.UserID, m.WorkspaceRole)
+	r.waitForRole(ctx, wait, m.WorkspaceID, m.UserID, m.WorkspaceRole)
 	flattenWorkspaceMember(m, &plan)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
@@ -141,7 +159,12 @@ func (r *workspaceMemberResource) Delete(ctx context.Context, req resource.Delet
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	_, err := retryUntilVisible(ctx, func() (struct{}, error) {
+	wait, tdiags := state.Timeouts.Delete(ctx, consistencyTimeout)
+	resp.Diagnostics.Append(tdiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	_, err := retryUntilVisibleFor(ctx, wait, consistencyInterval, func() (struct{}, error) {
 		return struct{}{}, r.client.RemoveWorkspaceMember(ctx, state.WorkspaceID.ValueString(), state.UserID.ValueString())
 	})
 	if err != nil && !client.IsNotFound(err) {
@@ -151,8 +174,8 @@ func (r *workspaceMemberResource) Delete(ctx context.Context, req resource.Delet
 
 // waitForRole blocks until a read of the membership reflects the role just
 // written, so the refresh that follows an apply sees the new value.
-func (r *workspaceMemberResource) waitForRole(ctx context.Context, workspaceID, userID, role string) {
-	waitUntil(ctx, func() bool {
+func (r *workspaceMemberResource) waitForRole(ctx context.Context, timeout time.Duration, workspaceID, userID, role string) {
+	waitUntilFor(ctx, timeout, consistencyInterval, func() bool {
 		m, err := r.client.FindWorkspaceMember(ctx, workspaceID, userID)
 		return err == nil && m.WorkspaceRole == role
 	})

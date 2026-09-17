@@ -2,6 +2,16 @@
 
 ENHANCEMENTS:
 
+* Support `timeouts` blocks on the three resources that wait for the Admin API
+  to converge: `anthropic_workspace_member` and
+  `anthropic_workspace_service_account` (create, update, delete) and
+  `anthropic_federation_rule` (create, update). The wait was a hardcoded twenty
+  seconds chosen because it happened to work; an organization that converges
+  more slowly now has somewhere to say so. Unset, every resource keeps the same
+  twenty seconds ([#19](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/19))
+
+ENHANCEMENTS:
+
 * Add `request_timeout` and `max_retries` provider attributes, with
   `ANTHROPIC_REQUEST_TIMEOUT` and `ANTHROPIC_MAX_RETRIES` as fallbacks. The
   client already supported both and nothing set them, so the 60 second timeout
