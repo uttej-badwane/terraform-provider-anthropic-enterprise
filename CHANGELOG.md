@@ -1,4 +1,4 @@
-## Unreleased
+## v0.4.1 (2026-09-17)
 
 BUG FIXES:
 
