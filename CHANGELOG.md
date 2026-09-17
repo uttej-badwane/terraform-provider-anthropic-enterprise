@@ -1,5 +1,16 @@
 ## Unreleased
 
+BUG FIXES:
+
+* Renaming an `anthropic_external_key` no longer replaces the registration.
+  `provider_config.region` is optional and computed under an object that forces
+  replacement, and without `UseStateForUnknown` it re-planned as unknown
+  whenever any other attribute changed, so the object differed from state and
+  the replace fired. Changing `display_name` therefore destroyed the
+  registration and issued a new `ekey_` id, stranding any workspace pointing at
+  it, since `anthropic_workspace.external_key_id` is write-once. The resource's
+  own `Update` was unreachable as a result ([#20](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/20))
+
 CHORE:
 
 * Test the eventual-consistency helpers directly. `isNotYetVisible` recognises
