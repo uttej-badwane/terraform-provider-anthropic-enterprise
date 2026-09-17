@@ -1,3 +1,14 @@
+## Unreleased
+
+BUG FIXES:
+
+* Keep SBOM entries out of `SHA256SUMS`. goreleaser checksums every artifact by
+  default, so adding SBOMs in v0.4.0 put fourteen `.sbom.json` lines into the
+  file the Terraform Registry reads to find a release's artifacts, and v0.4.0
+  was never ingested as a result. The checksum step is now restricted to the
+  provider archives and the manifest, which is the shape v0.3.0 shipped and the
+  registry accepted. SBOMs are still attached to every release
+
 ## v0.4.0 (2026-09-17)
 
 SECURITY:
