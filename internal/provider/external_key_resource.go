@@ -116,6 +116,7 @@ func (r *externalKeyResource) Schema(_ context.Context, _ resource.SchemaRequest
 						MarkdownDescription: "AWS region of the key. Derived from `kms_arn` when omitted.",
 						Optional:            true,
 						Computed:            true,
+						PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 					},
 					"key_name": schema.StringAttribute{
 						MarkdownDescription: "Google Cloud KMS key resource name, or Azure Key Vault key name. Required for `gcp` and `azure`.",

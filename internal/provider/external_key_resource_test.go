@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
@@ -61,6 +62,79 @@ data "anthropic_external_keys" "all" { depends_on = [anthropic_external_key.test
 					statecheck.ExpectKnownValue("data.anthropic_external_keys.all", tfjsonpath.New("external_keys"), knownvalue.ListPartial(map[int]knownvalue.Check{})),
 				},
 			},
+		},
+	})
+}
+
+// display_name is updatable, so changing it must update the registration in
+// place rather than replace it. A replacement issues a new ekey_ id, and
+// anthropic_workspace.external_key_id is write-once, so a rename would strand
+// every workspace already pointing at the key.
+func TestAccExternalKeyResource_updateInPlace(t *testing.T) {
+	name := acctest.RandomWithPrefix("tf-acc")
+	withName := func(displayName string) string {
+		return providerConfig + fmt.Sprintf(`
+resource "anthropic_external_key" "test" {
+  display_name = %q
+  provider_config = {
+    type    = "aws"
+    kms_arn = %q
+  }
+}
+`, displayName, testKMSARN)
+	}
+	withoutName := providerConfig + fmt.Sprintf(`
+resource "anthropic_external_key" "test" {
+  provider_config = {
+    type    = "aws"
+    kms_arn = %q
+  }
+}
+`, testKMSARN)
+
+	var firstID string
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: withName(name),
+				Check: resource.TestCheckResourceAttrWith("anthropic_external_key.test", "id", func(v string) error {
+					firstID = v
+					return nil
+				}),
+			},
+			{
+				Config: withName(name + "-renamed"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("anthropic_external_key.test", plancheck.ResourceActionUpdate),
+					},
+				},
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue("anthropic_external_key.test", tfjsonpath.New("display_name"), knownvalue.StringExact(name+"-renamed")),
+				},
+				Check: resource.TestCheckResourceAttrWith("anthropic_external_key.test", "id", func(v string) error {
+					if v != firstID {
+						return fmt.Errorf("id changed from %q to %q: the registration was replaced, not updated", firstID, v)
+					}
+					return nil
+				}),
+			},
+			{
+				// Removing display_name clears it, which is the other branch of
+				// the update: a null rather than a new value.
+				Config: withoutName,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("anthropic_external_key.test", plancheck.ResourceActionUpdate),
+					},
+				},
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue("anthropic_external_key.test", tfjsonpath.New("display_name"), knownvalue.Null()),
+				},
+			},
+			{Config: withoutName, PlanOnly: true},
 		},
 	})
 }
