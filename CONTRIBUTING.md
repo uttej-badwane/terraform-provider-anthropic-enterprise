@@ -43,6 +43,10 @@ must pass before merge.
 
 ## Development
 
+The `go` directive in `go.mod` tracks the latest stable Go release and is bumped
+when Go ships a new one; there are no users on an older toolchain to hold it
+back. `make tools` installs the linters at the versions CI runs.
+
 The local checkout can live in any directory. Only the GitHub repository name matters: the Terraform Registry requires it to be `terraform-provider-anthropic-enterprise`, and the Go module path and goreleaser `project_name` already reflect that. Resource types keep the `anthropic_` prefix, so configurations declare the provider with the local name `anthropic`.
 
 ```sh

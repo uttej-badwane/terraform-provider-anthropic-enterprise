@@ -33,12 +33,13 @@ jobs:
           fetch-depth: 0
           # Do not leave the write token in .git/config for later steps.
           persist-credentials: false
-      # Build releases with the current patched Go rather than the module's
-      # minimum. go-version-file pins setup-go to the exact version in the go
-      # directive and sets GOTOOLCHAIN=local, which shipped v0.1.0 on go1.25.8
-      # and with it the standard library vulnerabilities fixed in 1.25.9 and
-      # later. The go directive still declares the minimum the source supports,
-      # and the acceptance matrix still tests against it.
+      # Build releases with the current patched Go. go-version-file pins
+      # setup-go to the exact version in the go directive and sets
+      # GOTOOLCHAIN=local, which shipped v0.1.0 on go1.25.8 and with it the
+      # standard library vulnerabilities fixed in 1.25.9 and later. The go
+      # directive now tracks the latest stable release and is bumped when Go
+      # ships one, so the two normally agree; `stable` here is the backstop
+      # for the gap between a Go release and that bump.
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
