@@ -40,11 +40,24 @@ resource "anthropic_workspace_service_account" "ci_deploy_production" {
 - `workspace_id` (String) Workspace id (`wrkspc_...`).
 - `workspace_role` (String) Role in the workspace: `workspace_admin`, `workspace_developer`, `workspace_restricted_developer` or `workspace_user`. Service accounts cannot hold `workspace_billing`.
 
+### Optional
+
+- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
+
 ### Read-Only
 
 - `created_by_actor_id` (String) Actor that created the membership (`user_...` or `svac_...`).
 - `id` (String) Composite id `workspace_id/service_account_id`.
 - `implicit` (Boolean) True for the implicit default-workspace membership every service account has.
+
+<a id="nestedblock--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
 ## Import
 

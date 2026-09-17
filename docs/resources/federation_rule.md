@@ -52,6 +52,7 @@ resource "anthropic_federation_rule" "deploy_main" {
 - `applies_to_all_workspaces` (Boolean) Enable the rule for every workspace. Defaults to `false`, in which case `workspace_id` is required.
 - `archive_on_destroy` (Boolean) Archive the rule when the resource is destroyed. Defaults to `true`. When `false`, destroy only removes the resource from state. Imported resources start with `false`, so removing one from configuration cannot destroy it until you opt in.
 - `description` (String) Free-text description. Removing it clears the description.
+- `timeouts` (Block, Optional) (see [below for nested schema](#nestedblock--timeouts))
 - `token_lifetime_seconds` (Number) Lifetime of minted tokens in seconds (60 to 86400). Defaults to `3600`.
 - `workspace_id` (String) Workspace (`wrkspc_...`) the rule is enabled for. Required unless `applies_to_all_workspaces` is `true`.
 
@@ -74,6 +75,15 @@ Optional:
 - `claims` (Map of String) Claims that must match exactly.
 - `condition` (String) CEL expression over `claims`. Constant-true expressions are rejected by the API.
 - `subject_prefix` (String) Exact `sub` match, or a prefix when it ends with `*`.
+
+
+<a id="nestedblock--timeouts"></a>
+### Nested Schema for `timeouts`
+
+Optional:
+
+- `create` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+- `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
 
 ## Import
 

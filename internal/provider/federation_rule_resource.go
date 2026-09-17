@@ -3,7 +3,9 @@ package provider
 import (
 	"context"
 	"slices"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -39,23 +41,24 @@ type federationRuleResource struct {
 }
 
 type federationRuleModel struct {
-	ID                     types.String `tfsdk:"id"`
-	IssuerID               types.String `tfsdk:"issuer_id"`
-	Name                   types.String `tfsdk:"name"`
-	OAuthScope             types.String `tfsdk:"oauth_scope"`
-	ServiceAccountID       types.String `tfsdk:"service_account_id"`
-	Match                  types.Object `tfsdk:"match"`
-	Description            types.String `tfsdk:"description"`
-	TokenLifetimeSeconds   types.Int64  `tfsdk:"token_lifetime_seconds"`
-	AppliesToAllWorkspaces types.Bool   `tfsdk:"applies_to_all_workspaces"`
-	WorkspaceID            types.String `tfsdk:"workspace_id"`
-	ArchiveOnDestroy       types.Bool   `tfsdk:"archive_on_destroy"`
-	WorkspaceIDs           types.List   `tfsdk:"workspace_ids"`
-	IssuerName             types.String `tfsdk:"issuer_name"`
-	ServiceAccountName     types.String `tfsdk:"service_account_name"`
-	CreatedAt              types.String `tfsdk:"created_at"`
-	UpdatedAt              types.String `tfsdk:"updated_at"`
-	ArchivedAt             types.String `tfsdk:"archived_at"`
+	ID                     types.String   `tfsdk:"id"`
+	IssuerID               types.String   `tfsdk:"issuer_id"`
+	Name                   types.String   `tfsdk:"name"`
+	OAuthScope             types.String   `tfsdk:"oauth_scope"`
+	ServiceAccountID       types.String   `tfsdk:"service_account_id"`
+	Match                  types.Object   `tfsdk:"match"`
+	Description            types.String   `tfsdk:"description"`
+	TokenLifetimeSeconds   types.Int64    `tfsdk:"token_lifetime_seconds"`
+	AppliesToAllWorkspaces types.Bool     `tfsdk:"applies_to_all_workspaces"`
+	WorkspaceID            types.String   `tfsdk:"workspace_id"`
+	ArchiveOnDestroy       types.Bool     `tfsdk:"archive_on_destroy"`
+	WorkspaceIDs           types.List     `tfsdk:"workspace_ids"`
+	IssuerName             types.String   `tfsdk:"issuer_name"`
+	ServiceAccountName     types.String   `tfsdk:"service_account_name"`
+	CreatedAt              types.String   `tfsdk:"created_at"`
+	UpdatedAt              types.String   `tfsdk:"updated_at"`
+	ArchivedAt             types.String   `tfsdk:"archived_at"`
+	Timeouts               timeouts.Value `tfsdk:"timeouts"`
 }
 
 type ruleMatchModel struct {
@@ -76,7 +79,7 @@ func (r *federationRuleResource) Metadata(_ context.Context, req resource.Metada
 	resp.TypeName = req.ProviderTypeName + "_federation_rule"
 }
 
-func (r *federationRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *federationRuleResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Maps tokens from a federation issuer to a service account, producing short-lived credentials " +
 			"scoped to one or more workspaces.\n\n" +
@@ -85,6 +88,12 @@ func (r *federationRuleResource) Schema(_ context.Context, _ resource.SchemaRequ
 			"~> The Admin API cannot delete rules. `terraform destroy` **archives** the rule, which is irreversible. " +
 			"Set `archive_on_destroy = false` to only remove it from state. Bind additional workspaces with " +
 			"`anthropic_federation_rule_workspace`.",
+		Blocks: map[string]schema.Block{
+			// Create and update re-read the rule, because the API omits the
+			// denormalized issuer and service-account names from write
+			// responses and fills them a moment later. These bound that wait.
+			"timeouts": timeouts.Block(ctx, timeouts.Opts{Create: true, Update: true}),
+		},
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Rule id (`fdrl_...`).",
@@ -251,7 +260,12 @@ func (r *federationRuleResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 	tflog.Trace(ctx, "created federation rule", map[string]any{"id": rule.ID})
-	rule = r.rereadRule(ctx, rule)
+	wait, tdiags := plan.Timeouts.Create(ctx, consistencyTimeout)
+	resp.Diagnostics.Append(tdiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	rule = r.rereadRule(ctx, wait, rule)
 	state := plan
 	resp.Diagnostics.Append(flattenFederationRule(ctx, rule, &state)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
@@ -326,7 +340,12 @@ func (r *federationRuleResource) Update(ctx context.Context, req resource.Update
 		apiErrorDiag(&resp.Diagnostics, "Error updating federation rule", err)
 		return
 	}
-	rule = r.rereadRule(ctx, rule)
+	wait, tdiags := plan.Timeouts.Update(ctx, consistencyTimeout)
+	resp.Diagnostics.Append(tdiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	rule = r.rereadRule(ctx, wait, rule)
 	newState := plan
 	resp.Diagnostics.Append(flattenFederationRule(ctx, rule, &newState)...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &newState)...)
@@ -440,9 +459,9 @@ func flattenFederationRule(ctx context.Context, rule *client.FederationRule, m *
 // a moment after the write, so poll until both arrive rather than persisting a
 // half-filled read that a later refresh or import would contradict. Falls back
 // to the write response on error and to the last read once the wait elapses.
-func (r *federationRuleResource) rereadRule(ctx context.Context, written *client.FederationRule) *client.FederationRule {
+func (r *federationRuleResource) rereadRule(ctx context.Context, timeout time.Duration, written *client.FederationRule) *client.FederationRule {
 	best := written
-	waitUntil(ctx, func() bool {
+	waitUntilFor(ctx, timeout, consistencyInterval, func() bool {
 		got, err := r.client.GetFederationRule(ctx, written.ID)
 		if err != nil {
 			return false
