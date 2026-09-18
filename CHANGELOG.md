@@ -1,4 +1,4 @@
-## Unreleased
+## v0.5.0 (2026-09-18)
 
 FEATURES:
 
@@ -20,9 +20,6 @@ ENHANCEMENTS:
   seconds chosen because it happened to work; an organization that converges
   more slowly now has somewhere to say so. Unset, every resource keeps the same
   twenty seconds ([#19](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/19))
-
-ENHANCEMENTS:
-
 * Add `request_timeout` and `max_retries` provider attributes, with
   `ANTHROPIC_REQUEST_TIMEOUT` and `ANTHROPIC_MAX_RETRIES` as fallbacks. The
   client already supported both and nothing set them, so the 60 second timeout
