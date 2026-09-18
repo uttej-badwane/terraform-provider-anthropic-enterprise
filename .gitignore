@@ -12,6 +12,11 @@ website/.vagrant
 website/.bundle
 website/build
 website/node_modules
+# The release workflow installs semantic-release into the working tree. An
+# untracked directory there makes goreleaser refuse to build, which is a
+# safeguard worth keeping, so the directory is ignored rather than the check
+# relaxed.
+node_modules/
 .vagrant/
 *.backup
 *.tfstate
