@@ -122,9 +122,12 @@ func New(cfg Config) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	if cfg.AdminAPIKey == "" && cfg.OAuthToken == "" && cfg.EnterpriseAPIKey == "" && cfg.ComplianceAPIKey == "" && cfg.AnalyticsAPIKey == "" && cfg.APIKey == "" {
-		return nil, fmt.Errorf("no credentials configured: set admin_api_key, oauth_token, enterprise_api_key, compliance_api_key, analytics_api_key or api_key")
-	}
+	// A client with no credential at all is valid: the federated token exchange
+	// authenticates with the assertion in its body, so a configuration whose
+	// only use of the provider is minting a token has nothing to supply here.
+	// Every other endpoint still refuses to send an unauthenticated request —
+	// authorize returns a MissingCredentialError naming the attribute that
+	// endpoint needs, which is a better message than a list of all six.
 
 	rc := retryablehttp.NewClient()
 	rc.Logger = nil

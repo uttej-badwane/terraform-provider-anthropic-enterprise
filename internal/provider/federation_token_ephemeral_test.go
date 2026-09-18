@@ -94,3 +94,40 @@ ephemeral "anthropic_federation_token" "test" {
 		}},
 	})
 }
+
+// The resource documents that it needs no provider credential, because the
+// assertion authenticates the exchange. A configuration whose only use of the
+// provider is minting a token must therefore configure with nothing set.
+func TestAccFederationTokenEphemeral_withoutProviderCredentials(t *testing.T) {
+	skipUnlessMock(t)
+	skipOnOpenTofu(t)
+	for _, k := range []string{
+		"ANTHROPIC_ADMIN_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_ENTERPRISE_API_KEY",
+		"ANTHROPIC_COMPLIANCE_API_KEY", "ANTHROPIC_ANALYTICS_API_KEY", "ANTHROPIC_API_KEY",
+	} {
+		t.Setenv(k, "")
+	}
+	resource.Test(t, resource.TestCase{
+		TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_10_0)},
+		ProtoV6ProviderFactories: withEcho(),
+		Steps: []resource.TestStep{{
+			Config: `
+provider "anthropic" {}
+
+ephemeral "anthropic_federation_token" "test" {
+  federation_rule_id = "fdrl_01ExampleRuleId0000000000"
+  organization_id    = "00000000-0000-0000-0000-000000000000"
+  service_account_id = "svac_01ExampleServiceAcct000000"
+  assertion          = "` + mock.MockFederationAssertion + `"
+}
+
+provider "echo" { data = ephemeral.anthropic_federation_token.test }
+resource "echo" "test" {}
+`,
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue("echo.test", tfjsonpath.New("data").AtMapKey("access_token"),
+					knownvalue.StringRegexp(regexp.MustCompile(`^sk-ant-oat01-`))),
+			},
+		}},
+	})
+}
