@@ -48,7 +48,9 @@ you are not prepared to lose objects in.
 
 1. `make test testacc lint` all pass.
 2. `make generate` has been run and any `docs/` changes are committed.
-3. `CHANGELOG.md` has an entry under `## Unreleased` for anything user-visible.
+3. The pull request title is a Conventional Commit (`fix(scope): ...`).
+   It becomes the commit subject on merge and decides the next version.
+   Do not edit `CHANGELOG.md`; release notes are generated.
 4. No credentials, organization ids, user ids, email addresses or workspace
    names appear in the diff. Examples use placeholders only.
 5. The change goes up as a pull request. `main` is protected and requires

@@ -19,8 +19,8 @@ Before opening the pull request:
   hand is undone by the next generation. Static pages such as guides live in
   `templates/guides/`, because tfplugindocs treats `docs/` as output and
   deletes anything it does not own.
-* There is a `CHANGELOG.md` entry under `## Unreleased` for anything a user
-  would notice.
+* The pull request title is a Conventional Commit, because it becomes the
+  commit subject and decides the next version.
 * No credentials, organization ids, user ids, email addresses or workspace
   names appear anywhere in the diff. Examples use placeholders
   (`wrkspc_...`, `user_...`, `example.com`).
@@ -95,7 +95,8 @@ When `ANTHROPIC_API_KEY` (a regular workspace key) is also exported, `make testa
 * Every resource supports `terraform import`; composite ids use `parent_id/child_id`.
 * Archive-only API objects (workspaces, service accounts, federation issuers and rules) say so in their description and remove themselves from state when archived out of band.
 * Examples use placeholder identifiers (`wrkspc_...`, `user_...`, `example.com`) only.
-* Add a `CHANGELOG.md` entry under `## Unreleased` for user-visible changes. Never edit a section for a version that has already shipped: it records what that release contained, not what the tree looks like afterwards.
+* Title the pull request as a [Conventional Commit](https://www.conventionalcommits.org). Merges are squashes, so the title becomes the commit subject, and that subject is what decides whether a release is cut and what the version is. `feat` gives a minor, `fix` and `perf` a patch, and `docs`, `test`, `refactor`, `chore` and `ci` release nothing on their own. CI rejects a title that does not parse. See [RELEASING.md](./RELEASING.md).
+* Do not edit `CHANGELOG.md`. Entries through `v0.5.0` are kept as history; newer releases are described by their generated release notes.
 
 ## Things that catch people out
 

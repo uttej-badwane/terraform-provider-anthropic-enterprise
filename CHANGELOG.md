@@ -1,3 +1,7 @@
+<!-- Entries through v0.5.0 were written by hand. Releases after that are
+     described by their generated notes on the releases page, assembled from
+     the Conventional Commit subjects. See RELEASING.md. -->
+
 ## v0.5.0 (2026-09-18)
 
 FEATURES:

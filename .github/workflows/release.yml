@@ -1,27 +1,41 @@
 # Terraform Provider release workflow.
 name: Release
 
-# This GitHub action creates a release when a tag that matches the pattern
-# "v*" (e.g. v0.1.0) is created.
+# Releases are cut from the commit history rather than by hand: semantic-release
+# reads the Conventional Commit subjects since the last tag, decides whether a
+# release is warranted and what the version is, creates the tag, and then runs
+# goreleaser to build and sign the artifacts.
+#
+# Because pull requests are squash-merged, the pull request title becomes the
+# commit subject on main. That title is what decides the version, which is why
+# CI lints it.
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+  # Kept so a release can still be forced by pushing a tag if the automation is
+  # ever unavailable. goreleaser is the same either way.
+  workflow_dispatch:
 
 # The default token can only read. The one job that publishes asks for what it
 # needs below, so a second job added later starts from read-only.
 permissions:
   contents: read
 
+# Two releases running at once would race on the tag.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  goreleaser:
+  release:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # The signing key lives in this environment so a protection rule (required
-    # reviewers) can gate every release, and a tag push alone cannot sign one.
+    # reviewers) can gate every release if one is ever added.
     environment: release
     permissions:
-      # Creating the release and uploading assets counts as writing contents.
+      # Creating the tag, the release and its assets counts as writing contents.
       contents: write
       # Build provenance is signed with the workflow's OIDC identity.
       id-token: write
@@ -29,9 +43,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Allow goreleaser to access older tag information.
+          # semantic-release reads every commit since the last tag.
           fetch-depth: 0
-          # Do not leave the write token in .git/config for later steps.
           persist-credentials: false
       # Build releases with the current patched Go. go-version-file pins
       # setup-go to the exact version in the go directive and sets
@@ -44,6 +57,13 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Install goreleaser
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          install-only: true
       - name: Install syft for SBOM generation
         uses: anchore/sbom-action/download-syft@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
       - name: Import GPG key
@@ -52,20 +72,91 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
-        with:
-          args: release --clean
+
+      # semantic-release decides the version, tags it, and invokes goreleaser
+      # through its exec plugin. goreleaser leaves the release as a draft; the
+      # verification below is what promotes it, so nothing unverified is ever
+      # installable.
+      - name: Run semantic-release
+        id: semrel
+        run: |
+          npm install --no-save --no-audit --no-fund \
+            semantic-release@24.2.9 \
+            @semantic-release/commit-analyzer@13.0.1 \
+            @semantic-release/release-notes-generator@14.1.0 \
+            @semantic-release/exec@7.1.0 \
+            conventional-changelog-conventionalcommits@8.0.0
+          npx semantic-release
         env:
-          # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+
+      # A push that carries no releasable commit is the normal case, not a
+      # failure. Everything below is skipped when no tag was produced.
+      - name: Detect whether a release was cut
+        id: cut
+        run: |
+          if [ -d dist ] && ls dist/*_SHA256SUMS >/dev/null 2>&1; then
+            version="$(git describe --tags --abbrev=0)"
+            echo "released=true" >>"$GITHUB_OUTPUT"
+            echo "version=${version}" >>"$GITHUB_OUTPUT"
+            echo "Released ${version}"
+          else
+            echo "released=false" >>"$GITHUB_OUTPUT"
+            echo "No releasable commits; nothing to publish."
+          fi
+
       # SLSA provenance for every archive and the checksum file, so a consumer
       # can verify which workflow at which commit built what they downloaded:
       #   gh attestation verify <file> --repo uttej-badwane/terraform-provider-anthropic-enterprise
       - name: Attest build provenance
+        if: steps.cut.outputs.released == 'true'
         uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: |
             dist/*.zip
             dist/*_SHA256SUMS
+
+      # The checks a human used to run before publishing a draft. They stay,
+      # they are just no longer a human's job. Each one has caught a real
+      # problem: v0.4.0 was built and signed correctly and the Terraform
+      # Registry silently refused it, because SBOM entries in the checksum file
+      # are not what it expects to parse.
+      - name: Verify the artifacts before publishing
+        if: steps.cut.outputs.released == 'true'
+        env:
+          FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+        run: |
+          set -euo pipefail
+          sums="$(ls dist/*_SHA256SUMS)"
+
+          echo "== checksum file shape =="
+          entries="$(wc -l <"$sums" | tr -d ' ')"
+          sboms="$(grep -c 'sbom' "$sums" || true)"
+          echo "entries=${entries} sbom_lines=${sboms}"
+          # The registry parses this file to find a release's artifacts. It must
+          # list the platform archives and the manifest, and nothing else.
+          if [ "$sboms" -ne 0 ]; then
+            echo "::error::${sboms} SBOM entries in the checksum file; the registry will not ingest this release" >&2
+            exit 1
+          fi
+          if [ "$entries" -lt 10 ]; then
+            echo "::error::only ${entries} checksum entries; expected one per platform archive plus the manifest" >&2
+            exit 1
+          fi
+
+          echo "== signature =="
+          gpg --verify "${sums}.sig" "$sums"
+
+          echo "== toolchain and vulnerabilities =="
+          bin="$(find dist -type f -name 'terraform-provider-*' ! -name '*.zip' ! -name '*.json' ! -name '*SHA256SUMS*' | head -1)"
+          go version "$bin"
+          go run golang.org/x/vuln/cmd/govulncheck@latest -mode=binary "$bin"
+
+      # Only now does the release become installable.
+      - name: Publish the release
+        if: steps.cut.outputs.released == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.cut.outputs.version }}
+        run: gh release edit "$VERSION" --draft=false --repo "$GITHUB_REPOSITORY"
