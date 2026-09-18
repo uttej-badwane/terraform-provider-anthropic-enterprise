@@ -192,13 +192,11 @@ func (p *AnthropicProvider) Configure(ctx context.Context, req provider.Configur
 		return
 	}
 
-	if admin == "" && oauth == "" && enterprise == "" && compliance == "" && analytics == "" && apiKey == "" {
-		resp.Diagnostics.AddError("Missing credentials",
-			"Set at least one of admin_api_key (ANTHROPIC_ADMIN_API_KEY), oauth_token (ANTHROPIC_AUTH_TOKEN), "+
-				"enterprise_api_key (ANTHROPIC_ENTERPRISE_API_KEY), compliance_api_key (ANTHROPIC_COMPLIANCE_API_KEY), "+
-				"analytics_api_key (ANTHROPIC_ANALYTICS_API_KEY) or api_key (ANTHROPIC_API_KEY).")
-		return
-	}
+	// Configuring with no credential is allowed. anthropic_federation_token
+	// mints one from a signed assertion and needs nothing here, so refusing to
+	// configure would make that resource unusable on its own. A resource that
+	// does need a credential fails at its first request, naming the one it
+	// wants.
 
 	// Each credential class has its own key prefix, and an API handed a key of
 	// the wrong class answers with a bare 401 that never mentions which

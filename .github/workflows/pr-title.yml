@@ -32,7 +32,13 @@ jobs:
           echo "Title: ${TITLE}"
 
           types='feat|fix|perf|revert|build|deps|docs|test|refactor|style|chore|ci'
-          if printf '%s' "$TITLE" | grep -qE "^(${types})(\([a-z0-9._/-]+\))?!?: .+"; then
+
+          # GitHub's one-click Revert opens a pull request titled
+          # Revert "<the original title>". Rejecting that would mean hand-editing
+          # a title to undo a bad merge, which is the worst moment to add a step.
+          if printf '%s' "$TITLE" | grep -qE '^Revert ".+"$'; then
+            echo "A revert of a previous change."
+          elif printf '%s' "$TITLE" | grep -qE "^(${types})(\([a-z0-9._/-]+\))?!?: .+"; then
             echo "Looks like a Conventional Commit."
           else
             cat >&2 <<MSG

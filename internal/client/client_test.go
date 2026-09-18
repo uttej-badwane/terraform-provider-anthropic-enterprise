@@ -3,6 +3,7 @@ package client_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -28,10 +29,29 @@ func newClients(t *testing.T) (*mock.Server, *client.Client, *client.Client, *cl
 		mk(client.Config{EnterpriseAPIKey: mock.EnterpriseKey})
 }
 
-func TestNewRequiresCredential(t *testing.T) {
-	if _, err := client.New(client.Config{}); err == nil {
-		t.Fatal("expected error without credentials")
+// A client with no credential is valid, because the federated token exchange
+// authenticates with the assertion in its body rather than a key. Endpoints
+// that do need one refuse at request time, naming the credential they want.
+func TestNewWithoutCredentials(t *testing.T) {
+	c, err := client.New(client.Config{})
+	if err != nil {
+		t.Fatalf("a credential-free client is valid: %v", err)
 	}
+
+	_, err = c.ListWorkspaces(context.Background(), false)
+	if err == nil {
+		t.Fatal("expected a request needing a credential to fail")
+	}
+	var missing *client.MissingCredentialError
+	if !errors.As(err, &missing) {
+		t.Fatalf("got %v, want a MissingCredentialError naming the credential", err)
+	}
+	if missing.Class != client.CredAdmin {
+		t.Fatalf("got class %v, want %v", missing.Class, client.CredAdmin)
+	}
+}
+
+func TestNewRejectsABadBaseURL(t *testing.T) {
 	if _, err := client.New(client.Config{BaseURL: "::bad", AdminAPIKey: "x"}); err == nil {
 		t.Fatal("expected error for bad base url")
 	}
