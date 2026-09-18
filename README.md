@@ -133,19 +133,10 @@ and pull requests from forks get the full suite in CI automatically.
 **[Help wanted](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)** ·
 [All open issues](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues)
 
-Currently open, smallest first:
-
-| Issue | What it needs |
-|---|---|
-| [#21](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/21) | Unit tests for the eventual-consistency helpers. Pure Go, no Terraform, no credentials |
-| [#20](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/20) | An acceptance test for `anthropic_external_key` updates, against the mock |
-| [#18](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/18) | Expose the request timeout and retry count as provider attributes |
-| [#19](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/19) | `timeouts` blocks on the resources that wait for eventual consistency |
-| [#22](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/22) | An ephemeral resource for federation token exchange. The largest, and the most interesting |
-
-Each issue names the files to change and the conventions to follow. Comment to
-claim one and it will be assigned to you — the maintainer is not working on any
-of them.
+The badges above track what is open, and the lists behind them are the source of
+truth. Each issue names the files to change, the conventions to follow, and
+whether it needs an Anthropic account. Comment to claim one and it will be
+assigned to you — the maintainer is not working on any of them.
 
 [CONTRIBUTING.md](./CONTRIBUTING.md) covers the workflow, how to run the suite,
 and how to drive the provider against the standalone mock server.
