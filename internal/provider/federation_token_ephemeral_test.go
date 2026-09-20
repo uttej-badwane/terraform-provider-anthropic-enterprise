@@ -2,7 +2,9 @@ package provider
 
 import (
 	"os"
+	"os/exec"
 	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
@@ -17,17 +19,37 @@ import (
 	"github.com/uttej-badwane/terraform-provider-anthropic-enterprise/internal/mock"
 )
 
-// skipOnOpenTofu skips a test that depends on when the runtime re-opens an
-// ephemeral resource. OpenTofu 1.11 re-opens it for the plan that follows an
-// apply and so sees the freshly minted token as a change; 1.12 and Terraform do
-// not. The provider behaves identically either way, so rather than encode a
-// version comparison the echo-based assertion runs under Terraform, and the
-// error path below still runs everywhere.
-func skipOnOpenTofu(t *testing.T) {
+// Runtimes before 1.12 surface the ephemeral open itself in the machine-readable
+// plan that follows an apply, so the framework sees a non-empty plan even though
+// the runtime prints "No changes". OpenTofu 1.11 does this; 1.12 and current
+// Terraform do not.
+//
+// Rather than skip those runtimes, the expectation follows the version under
+// test, so the assertions still run everywhere. The axis is the version, not the
+// runtime: an earlier attempt keyed on OpenTofu versus Terraform and then failed
+// on OpenTofu 1.12.
+func planIncludesEphemeralOpen(t *testing.T) bool {
 	t.Helper()
-	if os.Getenv("TF_ACC_PROVIDER_HOST") == "registry.opentofu.org" {
-		t.Skip("plan emptiness after an ephemeral open differs across OpenTofu versions")
+	bin := os.Getenv("TF_ACC_TERRAFORM_PATH")
+	if bin == "" {
+		bin = "terraform"
 	}
+	// G702: bin is TF_ACC_TERRAFORM_PATH, the test framework's own contract for
+	// locating the binary, which the framework then executes itself. Anything
+	// able to set it has already chosen what this suite runs.
+	out, err := exec.Command(bin, "version").Output() //nolint:gosec
+	if err != nil {
+		t.Logf("could not read the runtime version from %q (%v); assuming a current plan shape", bin, err)
+		return false
+	}
+	m := regexp.MustCompile(`v(\d+)\.(\d+)\.`).FindSubmatch(out)
+	if m == nil {
+		t.Logf("could not parse a version from %q; assuming a current plan shape", out)
+		return false
+	}
+	major, _ := strconv.Atoi(string(m[1]))
+	minor, _ := strconv.Atoi(string(m[2]))
+	return major == 1 && minor < 12
 }
 
 // withEcho adds the echo provider alongside this one, so a test can read an
@@ -45,7 +67,6 @@ func withEcho() map[string]func() (tfprotov6.ProviderServer, error) {
 // into its own state so a check can read it.
 func TestAccFederationTokenEphemeral(t *testing.T) {
 	skipUnlessMock(t)
-	skipOnOpenTofu(t)
 	resource.Test(t, resource.TestCase{
 		TerraformVersionChecks:   []tfversion.TerraformVersionCheck{tfversion.SkipBelow(tfversion.Version1_10_0)},
 		ProtoV6ProviderFactories: withEcho(),
@@ -58,18 +79,29 @@ ephemeral "anthropic_federation_token" "test" {
   assertion          = "` + mock.MockFederationAssertion + `"
 }
 
+# Every open mints a new token, so echoing the token itself would differ on
+# the next plan. OpenTofu 1.11 re-opens an ephemeral resource for the plan that
+# follows an apply and would see that change, while 1.12 and Terraform do not.
+# Recording facts about the token rather than the token keeps the plan empty on
+# every runtime, and still proves the exchange returned what it should.
 provider "echo" {
-  data = ephemeral.anthropic_federation_token.test
+  data = {
+    token_type   = ephemeral.anthropic_federation_token.test.token_type
+    scope        = ephemeral.anthropic_federation_token.test.scope
+    expires_in   = ephemeral.anthropic_federation_token.test.expires_in
+    token_minted = startswith(ephemeral.anthropic_federation_token.test.access_token, "sk-ant-oat01-")
+  }
 }
 
 resource "echo" "test" {}
 `,
+			ExpectNonEmptyPlan: planIncludesEphemeralOpen(t),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue("echo.test", tfjsonpath.New("data").AtMapKey("token_type"), knownvalue.StringExact("Bearer")),
 				statecheck.ExpectKnownValue("echo.test", tfjsonpath.New("data").AtMapKey("scope"), knownvalue.StringExact("workspace:inference")),
 				statecheck.ExpectKnownValue("echo.test", tfjsonpath.New("data").AtMapKey("expires_in"), knownvalue.Int64Exact(3600)),
-				statecheck.ExpectKnownValue("echo.test", tfjsonpath.New("data").AtMapKey("access_token"),
-					knownvalue.StringRegexp(regexp.MustCompile(`^sk-ant-oat01-`))),
+				statecheck.ExpectKnownValue("echo.test", tfjsonpath.New("data").AtMapKey("token_minted"),
+					knownvalue.Bool(true)),
 			},
 		}},
 	})
@@ -100,7 +132,6 @@ ephemeral "anthropic_federation_token" "test" {
 // provider is minting a token must therefore configure with nothing set.
 func TestAccFederationTokenEphemeral_withoutProviderCredentials(t *testing.T) {
 	skipUnlessMock(t)
-	skipOnOpenTofu(t)
 	for _, k := range []string{
 		"ANTHROPIC_ADMIN_API_KEY", "ANTHROPIC_AUTH_TOKEN", "ANTHROPIC_ENTERPRISE_API_KEY",
 		"ANTHROPIC_COMPLIANCE_API_KEY", "ANTHROPIC_ANALYTICS_API_KEY", "ANTHROPIC_API_KEY",
@@ -121,12 +152,17 @@ ephemeral "anthropic_federation_token" "test" {
   assertion          = "` + mock.MockFederationAssertion + `"
 }
 
-provider "echo" { data = ephemeral.anthropic_federation_token.test }
+provider "echo" {
+  data = {
+    token_minted = startswith(ephemeral.anthropic_federation_token.test.access_token, "sk-ant-oat01-")
+  }
+}
 resource "echo" "test" {}
 `,
+			ExpectNonEmptyPlan: planIncludesEphemeralOpen(t),
 			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectKnownValue("echo.test", tfjsonpath.New("data").AtMapKey("access_token"),
-					knownvalue.StringRegexp(regexp.MustCompile(`^sk-ant-oat01-`))),
+				statecheck.ExpectKnownValue("echo.test", tfjsonpath.New("data").AtMapKey("token_minted"),
+					knownvalue.Bool(true)),
 			},
 		}},
 	})
