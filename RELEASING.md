@@ -57,6 +57,31 @@ automation continue from there.
 Any of these failing leaves the release a draft, so nothing unverified can be
 installed.
 
+## Dependency updates
+
+Dependabot's patch and minor updates merge themselves once every required check
+passes (`.github/workflows/dependabot-auto-merge.yml`). Majors stop for a
+person, because a major changes behaviour rather than fixing it.
+
+Nothing about that bypasses review by machines: `gh pr merge --auto` only queues
+the merge, and branch protection holds it until the build, the acceptance suite
+across every supported runtime, the vulnerability scan and the release
+configuration checks have all passed. A failing update is never merged.
+
+Whether such a merge cuts a release depends on its prefix, and the prefixes are
+assigned by what the dependency actually is:
+
+| Ecosystem | Prefix | Releases |
+|---|---|---|
+| Go module at the root | `deps` | patch — it is in the shipped binary |
+| Go module under `tools/` | `ci(tools)` | no |
+| GitHub Actions | `ci(actions)` | no |
+| npm release tooling | `ci(release-tooling)` | no |
+
+Only the first reaches users. The rest build or publish the provider without
+being part of it, and a new version of the provider whose binary is unchanged is
+noise on a registry that cannot withdraw one.
+
 ## Forcing a release
 
 `workflow_dispatch` on the Release workflow runs the same path. Use it if the
