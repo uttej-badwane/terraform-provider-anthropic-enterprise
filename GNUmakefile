@@ -19,6 +19,13 @@ tools:
 vulncheck:
 	go run golang.org/x/vuln/cmd/govulncheck@$(GOVULNCHECK_VERSION) ./...
 
+# `-diff` reports what `go mod tidy` would change and exits non-zero without
+# touching go.mod/go.sum, so it is safe to run on a dirty worktree and needs
+# no `git diff --exit-code` follow-up (Go 1.23+).
+tidy-check:
+	@go mod tidy -diff || \
+		(echo; echo "go.mod/go.sum are not tidy. Run 'go mod tidy' and commit the result."; exit 1)
+
 build:
 	go build -v ./...
 
@@ -70,4 +77,4 @@ docs-validate:
 snapshot:
 	goreleaser release --snapshot --clean --skip=sign
 
-.PHONY: default tools vulncheck build install lint generate fmt test testacc testacc-live testacc-live-write dev-override publish-check docs-validate snapshot
+.PHONY: default tools vulncheck tidy-check build install lint generate fmt test testacc testacc-live testacc-live-write dev-override publish-check docs-validate snapshot

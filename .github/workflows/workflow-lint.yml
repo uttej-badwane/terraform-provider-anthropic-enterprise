@@ -1,0 +1,66 @@
+# Checks on the workflows themselves. The rest of CI tests the provider; this
+# tests the thing that builds and signs it, which is the part an attacker would
+# rather reach.
+name: Workflow lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      # Run from source at a pinned version rather than through the action, so
+      # there is no third-party SHA to keep current — the same reasoning as
+      # `make vulncheck`. actionlint uses the runner's shellcheck when it is on
+      # PATH, which is where the `run:` blocks get checked for quoting bugs and
+      # for expressions interpolated straight into a shell.
+      - name: Run actionlint
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -color
+
+  no-pull-request-target:
+    name: No pull_request_target
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Every workflow here triggers on `pull_request`, so a pull request from a
+      # fork gets a read-only token and no secrets. `pull_request_target` runs
+      # with the base repository's secrets while checking out the fork's code,
+      # and that combination is what makes fork pull requests dangerous — it is
+      # why fork CI can run here without a maintainer approving each run.
+      #
+      # Nothing enforced that until this check existed; one future workflow
+      # would have quietly undone it.
+      - name: Reject pull_request_target
+        run: |
+          set -euo pipefail
+          # Matched at key position only — as a trigger, a list item under `on:`,
+          # or anywhere on an `on:` line. Prose that merely names the trigger
+          # does not match, which matters because the workflows here explain in
+          # comments why they avoid it, and this job's own name contains it.
+          if hits=$(grep -rnE \
+                '^[[:space:]]*(-[[:space:]]*)?pull_request_target[[:space:]]*:?[[:space:]]*$|^[[:space:]]*on:.*pull_request_target' \
+                .github/workflows/); then
+            echo "::error::pull_request_target grants the base repository's secrets to a workflow that checks out fork code. Use pull_request."
+            echo "${hits}"
+            exit 1
+          fi
+          echo "No pull_request_target trigger found."

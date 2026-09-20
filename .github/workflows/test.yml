@@ -21,6 +21,12 @@ concurrency:
 permissions:
   contents: read
 
+# Every checkout below passes `persist-credentials: false`. By default
+# actions/checkout writes its token into .git/config on the runner, where
+# any later step can read it — and these jobs run `go build`, `go test`
+# and `make generate`, which execute third-party module code. No job here
+# pushes, so none of them needs the credential to remain on disk.
+
 jobs:
   # Ensure project builds before running testing matrix
   build:
@@ -29,11 +35,17 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
           cache: true
       - run: go mod download
+      # A dependency added without `go mod tidy` leaves go.sum incomplete,
+      # which breaks a clean build for everyone else and for the release job.
+      - name: Check go.mod tidiness
+        run: make tidy-check
       - run: go build -v .
       # Unit tests for the client and the mock. The acceptance matrix below only
       # runs ./internal/provider, so without this step they never ran in CI.
@@ -46,6 +58,30 @@ jobs:
           # the day the job ran. Bump together with `make tools`.
           version: v2.13.2
 
+  # .goreleaser.yml is only exercised when a tag is pushed, so a mistake in it
+  # used to surface after the tag existed — at which point the tag has to be
+  # deleted and recut. `goreleaser check` validates the config on the pull
+  # request instead. It parses and validates only; it builds nothing and needs
+  # no credentials.
+  goreleaser:
+    name: GoReleaser config
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+      - name: Install goreleaser
+        uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7.2.3
+        with:
+          install-only: true
+      - name: Check the release config
+        run: goreleaser check
+
   # Dependabot reports dependencies whose version is known to be vulnerable.
   # govulncheck goes further and reports only the vulnerabilities this code can
   # actually reach, so the two together catch both the upgrade and the exposure.
@@ -55,6 +91,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       # govulncheck tracks the current Go release and needs a newer toolchain
       # than the module's floor, which go-version-file would pin it to. The
       # scan is unaffected by building with a newer Go than the module targets.
@@ -75,6 +113,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: 'stable'
@@ -87,6 +127,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
@@ -117,6 +159,8 @@ jobs:
           - '1.15.*'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
@@ -150,6 +194,8 @@ jobs:
           - '1.12.*'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
