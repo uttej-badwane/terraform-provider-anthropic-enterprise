@@ -117,3 +117,5 @@ organization you care about.
 - [Managed Agents](./managed-agents) — agents, environments, vaults and
   scheduled deployments, and the behaviours that differ from the rest of the
   provider.
+- [Running in CI without a long-lived key](./ci-cd) — exchange a pipeline's own
+  OIDC token for a short-lived credential, so no API key is stored anywhere.
