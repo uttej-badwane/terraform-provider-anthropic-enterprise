@@ -57,3 +57,22 @@ updates:
         update-types:
           - minor
           - patch
+
+  # The release tooling's lockfile, which pins semantic-release by hash. Without
+  # this it would silently fall behind and never pick up a security fix.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - tooling
+    commit-message:
+      prefix: "deps(release-tooling)"
+    groups:
+      release-tooling:
+        update-types:
+          - minor
+          - patch
