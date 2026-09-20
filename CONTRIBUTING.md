@@ -88,6 +88,20 @@ When `ANTHROPIC_API_KEY` (a regular workspace key) is also exported, `make testa
 
 `make testacc-live-write` additionally creates and destroys invites, workspace members, service accounts and federation objects. Point it only at a development organization. It reads `ANTHROPIC_ACC_INVITE_EMAIL` (an address you control) and `ANTHROPIC_ACC_MEMBER_USER_ID` (a non-admin member id) for the tests that need them, and needs `ANTHROPIC_AUTH_TOKEN` for the federation lifecycle.
 
+## Cleaning up after a live run
+
+The live tiers create objects named `tf-acc-<random>`. A run that fails partway
+leaves them behind, and several of them archive rather than delete, so a
+development organization accumulates permanent records.
+
+```sh
+go test ./internal/provider/ -sweep=all -timeout 30m
+```
+
+Sweeping needs the same credentials the live tiers do and acts on a real
+organization. Only names beginning with `tf-acc-` are touched; that prefix is
+the entire safety boundary, so never widen it to tidy up something else.
+
 ## Conventions
 
 * Terraform Plugin Framework only. `terraform-plugin-sdk/v2` imports are rejected by the linter.

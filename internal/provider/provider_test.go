@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"os"
 	"testing"
 
@@ -30,11 +31,10 @@ func TestMain(m *testing.M) {
 		os.Setenv("ANTHROPIC_API_KEY", mock.AgentsKey)
 		os.Setenv("ANTHROPIC_WORKSPACE_ID", "wrkspc_000000000000")
 	}
-	code := m.Run()
-	if testMock != nil {
-		testMock.Close()
-	}
-	os.Exit(code)
+	// resource.TestMain runs the sweepers when -sweep is passed and the tests
+	// otherwise, then exits. It does not return, so the mock is left for the
+	// process teardown to reclaim.
+	resource.TestMain(m)
 }
 
 // testAccPreCheck verifies the environment for acceptance tests.
