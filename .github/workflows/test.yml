@@ -119,8 +119,31 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
+      # Pinned rather than @latest, for the same reason as golangci-lint above:
+      # `latest` made the result depend on the day the job ran.
       - name: Run actionlint
-        run: go run github.com/rhysd/actionlint/cmd/actionlint@latest -color
+        run: go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.12 -color
+
+      # Fork pull requests run here without a maintainer approving each one,
+      # which is only safe because every workflow triggers on `pull_request`
+      # and so gets a read-only token and no secrets. `pull_request_target`
+      # runs with the base repository's secrets while checking out the fork's
+      # code, and nothing stopped one being added.
+      #
+      # Matched at key position only — as a trigger, as a list item under
+      # `on:`, or anywhere on an `on:` line — so the comments that name the
+      # trigger in prose, including this one, do not trip it.
+      - name: Reject pull_request_target
+        run: |
+          set -euo pipefail
+          if hits=$(grep -rnE \
+                '^[[:space:]]*(-[[:space:]]*)?pull_request_target[[:space:]]*:?[[:space:]]*$|^[[:space:]]*on:.*pull_request_target' \
+                .github/workflows/); then
+            echo "::error::pull_request_target grants the base repository's secrets to a workflow that checks out fork code. Use pull_request."
+            echo "${hits}"
+            exit 1
+          fi
+          echo "No pull_request_target trigger found."
 
   generate:
     runs-on: ubuntu-latest
