@@ -57,6 +57,9 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
+      # semantic-release 25 requires Node ^22.14.0 || >=24.10.0. '22' resolves
+      # to the newest 22.x, which satisfies it; pinning a lower exact version
+      # here would fail at install time rather than at release time.
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
@@ -80,12 +83,10 @@ jobs:
       - name: Run semantic-release
         id: semrel
         run: |
-          npm install --no-save --no-audit --no-fund \
-            semantic-release@24.2.9 \
-            @semantic-release/commit-analyzer@13.0.1 \
-            @semantic-release/release-notes-generator@14.1.0 \
-            @semantic-release/exec@7.1.0 \
-            conventional-changelog-conventionalcommits@8.0.0
+          # npm ci installs exactly what package-lock.json pins, verifying each
+          # tarball against its integrity hash. npm install would resolve the
+          # versions afresh and accept whatever the registry served.
+          npm ci --no-audit --no-fund
           npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
