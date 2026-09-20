@@ -76,3 +76,20 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # conventional-changelog-conventionalcommits 10 requires
+      # conventional-changelog-writer >=9. semantic-release 25 depends on
+      # @semantic-release/release-notes-generator ^14.1.0, which depends on
+      # writer ^8.0.0. So preset 10 runs ahead of the whole stable
+      # semantic-release line and cannot be used with it: merging that bump
+      # breaks release-notes generation in the job that publishes.
+      #
+      # It happened once already (#62, fixed in #63). Without this, Dependabot
+      # re-proposes the same bump every week and it only takes one merge.
+      #
+      # Remove this when @semantic-release/release-notes-generator 15 is
+      # released as stable — it depends on writer ^9 and preset ^10 — and
+      # semantic-release depends on it.
+      - dependency-name: conventional-changelog-conventionalcommits
+        update-types:
+          - version-update:semver-major
