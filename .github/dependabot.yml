@@ -3,6 +3,17 @@
 #
 # Minor and patch bumps are grouped into a single pull request per ecosystem to
 # keep review load low; majors arrive on their own because they need thought.
+#
+# The commit prefixes differ on purpose, because the prefix decides whether a
+# merge cuts a release. Only the root Go module ends up inside the binary users
+# download, so only it uses `deps`, which releases a patch. The tools module,
+# the actions and the npm release tooling all build or publish the provider
+# without being part of it, so they use `ci`, which releases nothing. Bumping
+# an action is not a reason to put another version of the provider on a
+# registry that cannot withdraw one.
+#
+# This matters more now that patch and minor updates merge themselves; see
+# .github/workflows/dependabot-auto-merge.yml.
 version: 2
 
 updates:
@@ -32,7 +43,7 @@ updates:
       - dependencies
       - tooling
     commit-message:
-      prefix: "deps(tools)"
+      prefix: "ci(tools)"
     groups:
       tools-minor-and-patch:
         update-types:
@@ -51,7 +62,7 @@ updates:
       - dependencies
       - github-actions
     commit-message:
-      prefix: "deps(actions)"
+      prefix: "ci(actions)"
     groups:
       actions-minor-and-patch:
         update-types:
@@ -70,7 +81,7 @@ updates:
       - dependencies
       - tooling
     commit-message:
-      prefix: "deps(release-tooling)"
+      prefix: "ci(release-tooling)"
     groups:
       release-tooling:
         update-types:
