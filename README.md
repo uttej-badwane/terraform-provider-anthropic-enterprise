@@ -15,17 +15,7 @@ Manage an Anthropic organization with Terraform through the [Admin API](https://
 
 Built on the Terraform Plugin Framework (protocol 6). Works with Terraform 1.13+ and OpenTofu 1.11+. Both floors are exercised in CI. OpenTofu earlier than 1.11 rejects the write-only attributes that `anthropic_vault_credential` and `anthropic_deployment` rely on.
 
-OpenTofu users: the provider is not yet listed in the OpenTofu registry (a listing request is in progress). Until it is, name the Terraform registry explicitly in `source`, which OpenTofu supports as-is:
-
-```hcl
-terraform {
-  required_providers {
-    anthropic = {
-      source = "registry.terraform.io/uttej-badwane/anthropic-enterprise"
-    }
-  }
-}
-```
+OpenTofu users: the provider is listed in the [OpenTofu registry](https://search.opentofu.org/provider/uttej-badwane/anthropic-enterprise/latest), so `source = "uttej-badwane/anthropic-enterprise"` resolves as-is. The release signing key is registered there too, so OpenTofu verifies the signature rather than skipping validation. Every platform archive is indexed there except `linux_s390x`; use the Terraform registry source if you need that platform.
 
 The provider is published as `uttej-badwane/anthropic-enterprise`. Its resource and data source types use the `anthropic_` prefix, so declare it with the local name `anthropic` exactly as in the example below; Terraform maps `anthropic_*` types to that local name.
 

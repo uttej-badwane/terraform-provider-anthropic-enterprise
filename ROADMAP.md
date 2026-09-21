@@ -6,10 +6,6 @@ map. Anything here is open to contributors unless it says otherwise, and the
 
 ## Next
 
-- **OpenTofu registry listing.** The provider works on OpenTofu 1.11+ and CI
-  proves it, but it is not yet in the OpenTofu registry, so `tofu init` needs
-  an explicit `registry.terraform.io/` source. A listing request is being
-  submitted.
 - **Provider-level tuning.** Expose the request timeout and retry count
   ([#18](https://github.com/uttej-badwane/terraform-provider-anthropic-enterprise/issues/18))
   and `timeouts` blocks on the resources that wait for eventual consistency
