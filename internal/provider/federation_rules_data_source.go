@@ -37,6 +37,9 @@ var attrTypesRuleSummary = map[string]attr.Type{
 	"token_lifetime_seconds":    types.Int64Type,
 	"created_at":                types.StringType,
 	"archived_at":               types.StringType,
+	"created_by_actor_id":       types.StringType,
+	"updated_by_actor_id":       types.StringType,
+	"archived_by_actor_id":      types.StringType,
 }
 
 func (d *federationRulesDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -63,6 +66,9 @@ func (d *federationRulesDataSource) Schema(_ context.Context, _ datasource.Schem
 					"token_lifetime_seconds":    dsInt64("Lifetime of minted tokens."),
 					"created_at":                dsString("Creation timestamp."),
 					"archived_at":               dsString("Archive timestamp; null while live."),
+					"created_by_actor_id":       dsString("Id of the user or service account that created it."),
+					"updated_by_actor_id":       dsString("Id of the user or service account that last updated it."),
+					"archived_by_actor_id":      dsString("Id of the user or service account that archived it; null while live."),
 				}},
 			},
 		},
@@ -106,6 +112,9 @@ func (d *federationRulesDataSource) Read(ctx context.Context, req datasource.Rea
 			"token_lifetime_seconds":    types.Int64Value(rule.TokenLifetimeSeconds),
 			"created_at":                types.StringValue(rule.CreatedAt),
 			"archived_at":               stringFromPtr(rule.ArchivedAt),
+			"created_by_actor_id":       stringFromPtr(rule.CreatedByActorID),
+			"updated_by_actor_id":       stringFromPtr(rule.UpdatedByActorID),
+			"archived_by_actor_id":      stringFromPtr(rule.ArchivedByActorID),
 		})
 		resp.Diagnostics.Append(diags...)
 		objs = append(objs, obj)

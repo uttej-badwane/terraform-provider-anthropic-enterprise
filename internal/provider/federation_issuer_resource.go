@@ -51,6 +51,9 @@ type federationIssuerModel struct {
 	CreatedAt             types.String `tfsdk:"created_at"`
 	UpdatedAt             types.String `tfsdk:"updated_at"`
 	ArchivedAt            types.String `tfsdk:"archived_at"`
+	CreatedByActorID      types.String `tfsdk:"created_by_actor_id"`
+	UpdatedByActorID      types.String `tfsdk:"updated_by_actor_id"`
+	ArchivedByActorID     types.String `tfsdk:"archived_by_actor_id"`
 	JWKSPollingDisabledAt types.String `tfsdk:"jwks_polling_disabled_at"`
 }
 
@@ -164,6 +167,19 @@ func (r *federationIssuerResource) Schema(_ context.Context, _ resource.SchemaRe
 			},
 			"archived_at": schema.StringAttribute{
 				MarkdownDescription: "Archive timestamp; null while live.",
+				Computed:            true,
+			},
+			"created_by_actor_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the user or service account that created it.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"updated_by_actor_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the user or service account that last updated it.",
+				Computed:            true,
+			},
+			"archived_by_actor_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the user or service account that archived it; null while live.",
 				Computed:            true,
 			},
 			"jwks_polling_disabled_at": schema.StringAttribute{
@@ -380,6 +396,9 @@ func flattenFederationIssuer(is *client.FederationIssuer, m *federationIssuerMod
 	m.CreatedAt = types.StringValue(is.CreatedAt)
 	m.UpdatedAt = types.StringValue(is.UpdatedAt)
 	m.ArchivedAt = stringFromPtr(is.ArchivedAt)
+	m.CreatedByActorID = stringFromPtr(is.CreatedByActorID)
+	m.UpdatedByActorID = stringFromPtr(is.UpdatedByActorID)
+	m.ArchivedByActorID = stringFromPtr(is.ArchivedByActorID)
 	m.JWKSPollingDisabledAt = stringFromPtr(is.JWKSPollingDisabledAt)
 	if m.ArchiveOnDestroy.IsNull() || m.ArchiveOnDestroy.IsUnknown() {
 		m.ArchiveOnDestroy = types.BoolValue(true)

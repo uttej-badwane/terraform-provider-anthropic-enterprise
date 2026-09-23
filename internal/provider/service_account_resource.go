@@ -42,14 +42,17 @@ type serviceAccountResource struct {
 }
 
 type serviceAccountModel struct {
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	Description      types.String `tfsdk:"description"`
-	OrganizationRole types.String `tfsdk:"organization_role"`
-	ArchiveOnDestroy types.Bool   `tfsdk:"archive_on_destroy"`
-	CreatedAt        types.String `tfsdk:"created_at"`
-	UpdatedAt        types.String `tfsdk:"updated_at"`
-	ArchivedAt       types.String `tfsdk:"archived_at"`
+	ID                types.String `tfsdk:"id"`
+	Name              types.String `tfsdk:"name"`
+	Description       types.String `tfsdk:"description"`
+	OrganizationRole  types.String `tfsdk:"organization_role"`
+	ArchiveOnDestroy  types.Bool   `tfsdk:"archive_on_destroy"`
+	CreatedAt         types.String `tfsdk:"created_at"`
+	UpdatedAt         types.String `tfsdk:"updated_at"`
+	ArchivedAt        types.String `tfsdk:"archived_at"`
+	CreatedByActorID  types.String `tfsdk:"created_by_actor_id"`
+	UpdatedByActorID  types.String `tfsdk:"updated_by_actor_id"`
+	ArchivedByActorID types.String `tfsdk:"archived_by_actor_id"`
 }
 
 func (r *serviceAccountResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -105,6 +108,19 @@ func (r *serviceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 			},
 			"archived_at": schema.StringAttribute{
 				MarkdownDescription: "Archive timestamp; null while the service account is live.",
+				Computed:            true,
+			},
+			"created_by_actor_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the user or service account that created it.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"updated_by_actor_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the user or service account that last updated it.",
+				Computed:            true,
+			},
+			"archived_by_actor_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the user or service account that archived it; null while live.",
 				Computed:            true,
 			},
 		},
@@ -224,6 +240,9 @@ func flattenServiceAccount(sa *client.ServiceAccount, m *serviceAccountModel) {
 	m.CreatedAt = types.StringValue(sa.CreatedAt)
 	m.UpdatedAt = types.StringValue(sa.UpdatedAt)
 	m.ArchivedAt = stringFromPtr(sa.ArchivedAt)
+	m.CreatedByActorID = stringFromPtr(sa.CreatedByActorID)
+	m.UpdatedByActorID = stringFromPtr(sa.UpdatedByActorID)
+	m.ArchivedByActorID = stringFromPtr(sa.ArchivedByActorID)
 	if m.ArchiveOnDestroy.IsNull() || m.ArchiveOnDestroy.IsUnknown() {
 		m.ArchiveOnDestroy = types.BoolValue(true)
 	}
@@ -235,13 +254,16 @@ func flattenServiceAccount(sa *client.ServiceAccount, m *serviceAccountModel) {
 }
 
 var attrTypesServiceAccount = map[string]attr.Type{
-	"id":                types.StringType,
-	"name":              types.StringType,
-	"description":       types.StringType,
-	"organization_role": types.StringType,
-	"created_at":        types.StringType,
-	"updated_at":        types.StringType,
-	"archived_at":       types.StringType,
+	"id":                   types.StringType,
+	"name":                 types.StringType,
+	"description":          types.StringType,
+	"organization_role":    types.StringType,
+	"created_at":           types.StringType,
+	"updated_at":           types.StringType,
+	"archived_at":          types.StringType,
+	"created_by_actor_id":  types.StringType,
+	"updated_by_actor_id":  types.StringType,
+	"archived_by_actor_id": types.StringType,
 }
 
 func serviceAccountObject(sa *client.ServiceAccount) (types.Object, diag.Diagnostics) {
@@ -250,12 +272,15 @@ func serviceAccountObject(sa *client.ServiceAccount) (types.Object, diag.Diagnos
 		desc = types.StringValue(*sa.Description)
 	}
 	return types.ObjectValue(attrTypesServiceAccount, map[string]attr.Value{
-		"id":                types.StringValue(sa.ID),
-		"name":              types.StringValue(sa.Name),
-		"description":       desc,
-		"organization_role": types.StringValue(sa.OrganizationRole),
-		"created_at":        types.StringValue(sa.CreatedAt),
-		"updated_at":        types.StringValue(sa.UpdatedAt),
-		"archived_at":       stringFromPtr(sa.ArchivedAt),
+		"id":                   types.StringValue(sa.ID),
+		"name":                 types.StringValue(sa.Name),
+		"description":          desc,
+		"organization_role":    types.StringValue(sa.OrganizationRole),
+		"created_at":           types.StringValue(sa.CreatedAt),
+		"updated_at":           types.StringValue(sa.UpdatedAt),
+		"archived_at":          stringFromPtr(sa.ArchivedAt),
+		"created_by_actor_id":  stringFromPtr(sa.CreatedByActorID),
+		"updated_by_actor_id":  stringFromPtr(sa.UpdatedByActorID),
+		"archived_by_actor_id": stringFromPtr(sa.ArchivedByActorID),
 	})
 }

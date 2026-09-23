@@ -42,9 +42,12 @@ resource "anthropic_service_account" "ci_deploy" {
 ### Read-Only
 
 - `archived_at` (String) Archive timestamp; null while the service account is live.
+- `archived_by_actor_id` (String) Id of the user or service account that archived it; null while live.
 - `created_at` (String) Creation timestamp (RFC 3339).
+- `created_by_actor_id` (String) Id of the user or service account that created it.
 - `id` (String) Service account id (`svac_...`).
 - `updated_at` (String) Last update timestamp (RFC 3339).
+- `updated_by_actor_id` (String) Id of the user or service account that last updated it.
 
 ## Import
 

@@ -58,6 +58,9 @@ type federationRuleModel struct {
 	CreatedAt              types.String   `tfsdk:"created_at"`
 	UpdatedAt              types.String   `tfsdk:"updated_at"`
 	ArchivedAt             types.String   `tfsdk:"archived_at"`
+	CreatedByActorID       types.String   `tfsdk:"created_by_actor_id"`
+	UpdatedByActorID       types.String   `tfsdk:"updated_by_actor_id"`
+	ArchivedByActorID      types.String   `tfsdk:"archived_by_actor_id"`
 	Timeouts               timeouts.Value `tfsdk:"timeouts"`
 }
 
@@ -193,6 +196,19 @@ func (r *federationRuleResource) Schema(ctx context.Context, _ resource.SchemaRe
 			},
 			"archived_at": schema.StringAttribute{
 				MarkdownDescription: "Archive timestamp; null while live.",
+				Computed:            true,
+			},
+			"created_by_actor_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the user or service account that created it.",
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"updated_by_actor_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the user or service account that last updated it.",
+				Computed:            true,
+			},
+			"archived_by_actor_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the user or service account that archived it; null while live.",
 				Computed:            true,
 			},
 		},
@@ -419,6 +435,9 @@ func flattenFederationRule(ctx context.Context, rule *client.FederationRule, m *
 	m.CreatedAt = types.StringValue(rule.CreatedAt)
 	m.UpdatedAt = types.StringValue(rule.UpdatedAt)
 	m.ArchivedAt = stringFromPtr(rule.ArchivedAt)
+	m.CreatedByActorID = stringFromPtr(rule.CreatedByActorID)
+	m.UpdatedByActorID = stringFromPtr(rule.UpdatedByActorID)
+	m.ArchivedByActorID = stringFromPtr(rule.ArchivedByActorID)
 	if m.ArchiveOnDestroy.IsNull() || m.ArchiveOnDestroy.IsUnknown() {
 		m.ArchiveOnDestroy = types.BoolValue(true)
 	}
