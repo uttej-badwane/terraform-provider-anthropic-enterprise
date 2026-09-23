@@ -6,6 +6,7 @@ func (s *Server) routes() {
 	s.reportRoutes()
 	s.analyticsRoutes()
 	s.agentRoutes()
+	s.modelRoutes()
 	s.handle("POST /v1/oauth/token", s.exchangeFederationToken)
 	s.handle("GET "+base+"/me", s.getOrganization)
 	s.handle("GET "+base+"/compliance_settings", s.getCompliance)

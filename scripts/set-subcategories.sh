@@ -30,6 +30,8 @@ subcategory_for() {
       echo "Workspaces" ;;
     organization | user | users | invite | invites | api_key | api_keys | rate_limits)
       echo "Console Organization" ;;
+    model | models)
+      echo "Models" ;;
     *)
       return 1 ;;
   esac
