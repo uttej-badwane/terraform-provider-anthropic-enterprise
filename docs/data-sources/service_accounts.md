@@ -39,9 +39,12 @@ output "service_account_names" {
 Read-Only:
 
 - `archived_at` (String) Archive timestamp; null while live.
+- `archived_by_actor_id` (String) Id of the user or service account that archived it; null while live.
 - `created_at` (String) Creation timestamp.
+- `created_by_actor_id` (String) Id of the user or service account that created it.
 - `description` (String) Description; null when empty.
 - `id` (String) Service account id.
 - `name` (String) Slug name.
 - `organization_role` (String) Organization role (`developer` or `admin`).
 - `updated_at` (String) Last update timestamp.
+- `updated_by_actor_id` (String) Id of the user or service account that last updated it.

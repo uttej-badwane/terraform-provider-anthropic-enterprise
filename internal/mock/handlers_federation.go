@@ -114,6 +114,7 @@ func (s *Server) updateServiceAccount(w http.ResponseWriter, r *http.Request) {
 		sa.OrganizationRole = *in.OrganizationRole
 	}
 	sa.UpdatedAt = now()
+	sa.UpdatedByActorID = ptr(s.store.users[1].ID)
 	writeJSON(w, sa)
 }
 
@@ -134,7 +135,7 @@ func (s *Server) archiveServiceAccount(w http.ResponseWriter, r *http.Request) {
 	}
 	if sa.ArchivedAt == nil {
 		sa.ArchivedAt = ptr(now())
-		sa.ArchivedByActor = ptr(s.store.users[1].ID)
+		sa.ArchivedByActorID = ptr(s.store.users[1].ID)
 		s.store.saMembers = slices.DeleteFunc(s.store.saMembers, func(m *client.ServiceAccountWorkspaceMember) bool { return m.ServiceAccountID == sa.ID })
 	}
 	writeJSON(w, sa)
@@ -216,7 +217,7 @@ func (s *Server) createIssuer(w http.ResponseWriter, r *http.Request) {
 		}
 		jwks = *in.JWKS
 	}
-	is := &client.FederationIssuer{ID: s.nextID("fdis"), CheckJTI: true, CreatedAt: now(), UpdatedAt: now(), CreatedByActorID: ptr(s.store.users[1].ID),
+	is := &client.FederationIssuer{ID: s.nextID("fdis"), CheckJTI: true, CreatedAt: now(), UpdatedAt: now(), CreatedByActorID: ptr(s.store.users[1].ID), UpdatedByActorID: ptr(s.store.users[1].ID),
 		IssuerURL: in.IssuerURL, JWKS: jwks, MaxJWTLifetimeSeconds: 3600, Name: in.Name, Type: "federation_issuer",
 		PollStatus: &client.PollStatus{ConsecutiveFailures: 0, LastFetchedAt: ptr(now()), NextPollAt: ptr(now())}}
 	if in.CheckJTI != nil {
@@ -292,6 +293,7 @@ func (s *Server) updateIssuer(w http.ResponseWriter, r *http.Request) {
 		is.JWKSPollingDisabledAt = nil
 	}
 	is.UpdatedAt = now()
+	is.UpdatedByActorID = ptr(s.store.users[1].ID)
 	writeJSON(w, is)
 }
 
@@ -312,6 +314,7 @@ func (s *Server) archiveIssuer(w http.ResponseWriter, r *http.Request) {
 	}
 	if is.ArchivedAt == nil {
 		is.ArchivedAt = ptr(now())
+		is.ArchivedByActorID = ptr(s.store.users[1].ID)
 	}
 	writeJSON(w, is)
 }
@@ -414,7 +417,7 @@ func (s *Server) createRule(w http.ResponseWriter, r *http.Request) {
 		lifetime = *in.TokenLifetimeSeconds
 	}
 	rl := &client.FederationRule{ID: s.nextID("fdrl"), AppliesToAllWorkspaces: all, CreatedAt: now(), UpdatedAt: now(),
-		CreatedByActorID: ptr(s.store.users[1].ID), Description: in.Description, IssuerID: is.ID, IssuerName: &is.Name,
+		CreatedByActorID: ptr(s.store.users[1].ID), UpdatedByActorID: ptr(s.store.users[1].ID), Description: in.Description, IssuerID: is.ID, IssuerName: &is.Name,
 		Match: in.Match, Name: in.Name, OAuthScope: in.OAuthScope,
 		Target:               client.RuleTarget{Type: "service_account", ServiceAccountID: sa.ID, ServiceAccountName: &sa.Name},
 		TokenLifetimeSeconds: lifetime, Type: "federation_rule", WorkspaceIDs: []string{}}
@@ -527,6 +530,7 @@ func (s *Server) updateRule(w http.ResponseWriter, r *http.Request) {
 		rl.WorkspaceIDs = []string{*in.WorkspaceID}
 	}
 	rl.UpdatedAt = now()
+	rl.UpdatedByActorID = ptr(s.store.users[1].ID)
 	writeJSON(w, withoutReadTimeNames(rl))
 }
 
@@ -541,6 +545,7 @@ func (s *Server) archiveRule(w http.ResponseWriter, r *http.Request) {
 	}
 	if rl.ArchivedAt == nil {
 		rl.ArchivedAt = ptr(now())
+		rl.ArchivedByActorID = ptr(s.store.users[1].ID)
 	}
 	writeJSON(w, rl)
 }

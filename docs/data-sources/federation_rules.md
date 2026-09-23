@@ -41,11 +41,14 @@ Read-Only:
 
 - `applies_to_all_workspaces` (Boolean) Whether the rule is enabled for every workspace.
 - `archived_at` (String) Archive timestamp; null while live.
+- `archived_by_actor_id` (String) Id of the user or service account that archived it; null while live.
 - `created_at` (String) Creation timestamp.
+- `created_by_actor_id` (String) Id of the user or service account that created it.
 - `id` (String) Rule id.
 - `issuer_id` (String) Issuer id.
 - `name` (String) Slug name.
 - `oauth_scope` (String) Scope of minted tokens.
 - `service_account_id` (String) Target service account id.
 - `token_lifetime_seconds` (Number) Lifetime of minted tokens.
+- `updated_by_actor_id` (String) Id of the user or service account that last updated it.
 - `workspace_ids` (List of String) Workspaces the rule is enabled for.

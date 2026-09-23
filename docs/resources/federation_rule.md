@@ -59,11 +59,14 @@ resource "anthropic_federation_rule" "deploy_main" {
 ### Read-Only
 
 - `archived_at` (String) Archive timestamp; null while live.
+- `archived_by_actor_id` (String) Id of the user or service account that archived it; null while live.
 - `created_at` (String) Creation timestamp (RFC 3339).
+- `created_by_actor_id` (String) Id of the user or service account that created it.
 - `id` (String) Rule id (`fdrl_...`).
 - `issuer_name` (String) Name of the issuer.
 - `service_account_name` (String) Name of the target service account.
 - `updated_at` (String) Last update timestamp (RFC 3339).
+- `updated_by_actor_id` (String) Id of the user or service account that last updated it.
 - `workspace_ids` (List of String) All workspaces the rule is enabled for, including bindings added with `anthropic_federation_rule_workspace`.
 
 <a id="nestedatt--match"></a>

@@ -42,6 +42,9 @@ func (d *federationIssuerDataSource) Schema(_ context.Context, _ datasource.Sche
 			"jwks_type":                dsString("Key source type (`discovery`, `explicit_url`, `inline`)."),
 			"created_at":               dsString("Creation timestamp."),
 			"archived_at":              dsString("Archive timestamp; null while live."),
+			"created_by_actor_id":      dsString("Id of the user or service account that created it."),
+			"updated_by_actor_id":      dsString("Id of the user or service account that last updated it."),
+			"archived_by_actor_id":     dsString("Id of the user or service account that archived it; null while live."),
 		},
 	}
 }
@@ -98,6 +101,9 @@ func (d *federationIssuerDataSource) Read(ctx context.Context, req datasource.Re
 		"jwks_type":                types.StringValue(is.JWKS.Type),
 		"created_at":               types.StringValue(is.CreatedAt),
 		"archived_at":              stringFromPtr(is.ArchivedAt),
+		"created_by_actor_id":      stringFromPtr(is.CreatedByActorID),
+		"updated_by_actor_id":      stringFromPtr(is.UpdatedByActorID),
+		"archived_by_actor_id":     stringFromPtr(is.ArchivedByActorID),
 	})
 	resp.Diagnostics.Append(diags...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, obj)...)
