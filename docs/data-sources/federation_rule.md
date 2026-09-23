@@ -34,10 +34,12 @@ output "deploy_rule_workspaces" {
 
 - `applies_to_all_workspaces` (Boolean) Whether the rule is enabled for every workspace.
 - `archived_at` (String) Archive timestamp; null while live.
+- `archived_by_actor_id` (String) Id of the user or service account that archived it; null while live.
 - `audience` (String) Exact `aud` match.
 - `claims` (Map of String) Exact-match claims.
 - `condition` (String) CEL condition over claims.
 - `created_at` (String) Creation timestamp.
+- `created_by_actor_id` (String) Id of the user or service account that created it.
 - `description` (String) Description.
 - `issuer_id` (String) Issuer id.
 - `issuer_name` (String) Issuer name.
@@ -46,4 +48,5 @@ output "deploy_rule_workspaces" {
 - `service_account_name` (String) Target service account name.
 - `subject_prefix` (String) Matched `sub` prefix (exact unless it ends in `*`).
 - `token_lifetime_seconds` (Number) Lifetime of minted tokens.
+- `updated_by_actor_id` (String) Id of the user or service account that last updated it.
 - `workspace_ids` (List of String) Workspaces the rule is enabled for.

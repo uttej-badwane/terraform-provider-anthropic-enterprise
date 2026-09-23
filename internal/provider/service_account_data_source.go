@@ -33,13 +33,16 @@ func (d *serviceAccountDataSource) Schema(_ context.Context, _ datasource.Schema
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Looks up one service account by id or name. Requires `oauth_token`.",
 		Attributes: map[string]schema.Attribute{
-			"id":                schema.StringAttribute{MarkdownDescription: "Service account id (`svac_...`). Exactly one of `id` or `name` must be set.", Optional: true, Computed: true},
-			"name":              schema.StringAttribute{MarkdownDescription: "Slug name; only live (unarchived) service accounts are matched.", Optional: true, Computed: true},
-			"description":       dsString("Description; null when empty."),
-			"organization_role": dsString("Organization role (`developer` or `admin`)."),
-			"created_at":        dsString("Creation timestamp."),
-			"updated_at":        dsString("Last update timestamp."),
-			"archived_at":       dsString("Archive timestamp; null while live."),
+			"id":                   schema.StringAttribute{MarkdownDescription: "Service account id (`svac_...`). Exactly one of `id` or `name` must be set.", Optional: true, Computed: true},
+			"name":                 schema.StringAttribute{MarkdownDescription: "Slug name; only live (unarchived) service accounts are matched.", Optional: true, Computed: true},
+			"description":          dsString("Description; null when empty."),
+			"organization_role":    dsString("Organization role (`developer` or `admin`)."),
+			"created_at":           dsString("Creation timestamp."),
+			"updated_at":           dsString("Last update timestamp."),
+			"archived_at":          dsString("Archive timestamp; null while live."),
+			"created_by_actor_id":  dsString("Id of the user or service account that created it."),
+			"updated_by_actor_id":  dsString("Id of the user or service account that last updated it."),
+			"archived_by_actor_id": dsString("Id of the user or service account that archived it; null while live."),
 		},
 	}
 }

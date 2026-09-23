@@ -276,17 +276,17 @@ type WorkspaceRateLimit struct {
 
 // ServiceAccount is a non-human principal.
 type ServiceAccount struct {
-	ID               string  `json:"id"`
-	ArchivedAt       *string `json:"archived_at"`
-	ArchivedByActor  *string `json:"archived_by_actor_id"`
-	CreatedAt        string  `json:"created_at"`
-	CreatedByActorID *string `json:"created_by_actor_id"`
-	Description      *string `json:"description"`
-	Name             string  `json:"name"`
-	OrganizationRole string  `json:"organization_role"`
-	Type             string  `json:"type"`
-	UpdatedAt        string  `json:"updated_at"`
-	UpdatedByActorID *string `json:"updated_by_actor_id"`
+	ID                string  `json:"id"`
+	ArchivedAt        *string `json:"archived_at"`
+	ArchivedByActorID *string `json:"archived_by_actor_id"`
+	CreatedAt         string  `json:"created_at"`
+	CreatedByActorID  *string `json:"created_by_actor_id"`
+	Description       *string `json:"description"`
+	Name              string  `json:"name"`
+	OrganizationRole  string  `json:"organization_role"`
+	Type              string  `json:"type"`
+	UpdatedAt         string  `json:"updated_at"`
+	UpdatedByActorID  *string `json:"updated_by_actor_id"`
 }
 
 // ServiceAccountCreate is the create body.

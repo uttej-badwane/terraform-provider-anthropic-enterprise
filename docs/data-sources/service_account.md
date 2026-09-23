@@ -33,7 +33,10 @@ data "anthropic_service_account" "by_id" {
 ### Read-Only
 
 - `archived_at` (String) Archive timestamp; null while live.
+- `archived_by_actor_id` (String) Id of the user or service account that archived it; null while live.
 - `created_at` (String) Creation timestamp.
+- `created_by_actor_id` (String) Id of the user or service account that created it.
 - `description` (String) Description; null when empty.
 - `organization_role` (String) Organization role (`developer` or `admin`).
 - `updated_at` (String) Last update timestamp.
+- `updated_by_actor_id` (String) Id of the user or service account that last updated it.

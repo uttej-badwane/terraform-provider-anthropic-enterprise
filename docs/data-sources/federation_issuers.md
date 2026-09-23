@@ -37,10 +37,13 @@ output "issuer_urls" {
 Read-Only:
 
 - `archived_at` (String) Archive timestamp; null while live.
+- `archived_by_actor_id` (String) Id of the user or service account that archived it; null while live.
 - `check_jti` (Boolean) Whether `jti` replay checking is enabled.
 - `created_at` (String) Creation timestamp.
+- `created_by_actor_id` (String) Id of the user or service account that created it.
 - `id` (String) Issuer id.
 - `issuer_url` (String) Expected `iss` claim.
 - `jwks_type` (String) Key source type (`discovery`, `explicit_url`, `inline`).
 - `max_jwt_lifetime_seconds` (Number) Maximum accepted token lifetime.
 - `name` (String) Slug name.
+- `updated_by_actor_id` (String) Id of the user or service account that last updated it.
