@@ -75,11 +75,23 @@ roughly one release in three will hit this.
 
 This is a delay, not a loss. OpenTofu retries an errored version with a doubling
 backoff, starting at 30 minutes after the failure, and by then the release is
-published. So:
+published. The backoff is only the minimum, though: the retry waits for the next
+scan after it expires, GitHub runs scheduled workflows late, and a listed
+version then waits for a deploy and a cache. v0.9.0 went like this:
 
-- **A version missing from OpenTofu for up to about an hour needs nothing done.**
+| UTC | |
+|---|---|
+| 15:34 | scan fails, version recorded as errored |
+| 16:04 | backoff expires |
+| 16:27 | a scan retries it and it is listed in the registry metadata |
+| 16:48 | the registry API serves it, 74 minutes after the error |
+
+So:
+
+- **A version missing from OpenTofu for up to two hours needs nothing done.**
   v0.9.0 was the first to hit this: OpenTofu scanned 28 seconds after its
-  draft was created and five minutes before it was published.
+  draft was created and five minutes before it was published, and it was
+  served 74 minutes later without anyone intervening.
 - **The error is visible** in `versions_errors` in
   [the provider's metadata file](https://github.com/opentofu/registry/blob/main/providers/u/uttej-badwane/anthropic-enterprise.json),
   typically as `checksums not found in release`.
