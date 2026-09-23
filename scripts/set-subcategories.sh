@@ -21,7 +21,8 @@ subcategory_for() {
     skill | skills | skill_versions)
       echo "Skills" ;;
     agent | agents | agent_versions | environment | environments | vault | vaults | \
-    vault_credential | vault_credentials | deployment | deployments | memory_store | memory_stores)
+    vault_credential | vault_credentials | deployment | deployments | deployment_run | deployment_runs | \
+    memory_store | memory_stores)
       echo "Managed Agents" ;;
     service_account | service_accounts | workspace_service_account | workspace_service_accounts | federation_*)
       echo "Service Accounts and Federation" ;;

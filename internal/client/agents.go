@@ -2,7 +2,9 @@ package client
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
+	"strconv"
 )
 
 var (
@@ -415,4 +417,81 @@ func (c *Client) GetSkillVersion(ctx context.Context, skillID, version string) (
 // DeleteSkillVersion deletes one version.
 func (c *Client) DeleteSkillVersion(ctx context.Context, skillID, version string) error {
 	return c.delete(ctx, CredAPIKey, "/v1/skills/"+url.PathEscape(skillID)+"/versions/"+url.PathEscape(version))
+}
+
+// --- deployment runs ---------------------------------------------------------
+
+// DeploymentRun is one firing of a deployment.
+//
+// The shape here was taken from a live run rather than the reference: a run
+// carries no status field and no start or end timestamps. It has either a
+// SessionID or an Error, which is what the has_error filter selects on.
+type DeploymentRun struct {
+	ID             string          `json:"id"`
+	Type           string          `json:"type"`
+	DeploymentID   string          `json:"deployment_id"`
+	SessionID      *string         `json:"session_id"`
+	CreatedAt      string          `json:"created_at"`
+	Agent          DeploymentAgent `json:"agent"`
+	TriggerContext TriggerContext  `json:"trigger_context"`
+	// Error is kept raw. Every run observed had it null, so its populated
+	// shape is unconfirmed and decoding into a guessed struct would drop
+	// whatever it actually contains.
+	Error json.RawMessage `json:"error"`
+}
+
+// DeploymentAgent is the agent a run executed, pinned to a version.
+type DeploymentAgent struct {
+	ID      string `json:"id"`
+	Type    string `json:"type"`
+	Version int64  `json:"version"`
+}
+
+// TriggerContext records what caused a run. ScheduledAt is set for schedule
+// triggers and absent otherwise.
+type TriggerContext struct {
+	Type        string  `json:"type"`
+	ScheduledAt *string `json:"scheduled_at,omitempty"`
+}
+
+// DeploymentRunListOptions filters ListDeploymentRuns. The CreatedAt bounds
+// are RFC 3339 timestamps; HasError is tri-state, so it is a pointer.
+type DeploymentRunListOptions struct {
+	DeploymentID string
+	TriggerType  string
+	HasError     *bool
+	CreatedAtGt  string
+	CreatedAtGte string
+	CreatedAtLt  string
+	CreatedAtLte string
+}
+
+// ListDeploymentRuns lists deployment runs, newest first.
+func (c *Client) ListDeploymentRuns(ctx context.Context, opts DeploymentRunListOptions) ([]DeploymentRun, error) {
+	q := url.Values{}
+	for key, v := range map[string]string{
+		"deployment_id":  opts.DeploymentID,
+		"trigger_type":   opts.TriggerType,
+		"created_at_gt":  opts.CreatedAtGt,
+		"created_at_gte": opts.CreatedAtGte,
+		"created_at_lt":  opts.CreatedAtLt,
+		"created_at_lte": opts.CreatedAtLte,
+	} {
+		if v != "" {
+			q.Set(key, v)
+		}
+	}
+	if opts.HasError != nil {
+		q.Set("has_error", strconv.FormatBool(*opts.HasError))
+	}
+	return listToken[DeploymentRun](ctx, c, CredAPIKey, "/v1/deployment_runs", q, betaAgents)
+}
+
+// GetDeploymentRun returns one deployment run.
+func (c *Client) GetDeploymentRun(ctx context.Context, id string) (*DeploymentRun, error) {
+	var out DeploymentRun
+	if err := c.get(ctx, CredAPIKey, "/v1/deployment_runs/"+url.PathEscape(id), nil, &out, betaAgents); err != nil {
+		return nil, err
+	}
+	return &out, nil
 }
