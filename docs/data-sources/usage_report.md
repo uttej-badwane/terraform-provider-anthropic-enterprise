@@ -42,11 +42,12 @@ output "total_output_tokens" {
 - `bucket_width` (String) `1d` (max 31 buckets), `1h` (max 168) or `1m` (max 1440). Defaults to `1d`.
 - `context_windows` (List of String) Restrict to these context windows (`0-200k`, `200k-1M`).
 - `ending_at` (String) Exclusive end, RFC 3339. Defaults to the API default window.
-- `group_by` (List of String) Dimensions to group by: `account_id`, `api_key_id`, `context_window`, `inference_geo`, `model`, `service_account_id`, `service_tier`, `workspace_id`.
+- `group_by` (List of String) Dimensions to group by: `account_id`, `api_key_id`, `context_window`, `inference_geo`, `model`, `service_account_id`, `service_tier`, `speed`, `workspace_id`. Grouping by `speed` sends the `fast-mode-2026-02-01` beta header.
 - `inference_geos` (List of String) Restrict to these inference geographies (`global`, `us`, `not_available`).
 - `models` (List of String) Restrict to these models.
 - `service_account_ids` (List of String) Restrict to these service account ids.
 - `service_tiers` (List of String) Restrict to these service tiers (`standard`, `batch`, `priority`, `priority_on_demand`, `flex`, `flex_discount`).
+- `speeds` (List of String) Restrict to these speeds (`standard`, `fast`). Setting this sends the `fast-mode-2026-02-01` beta header.
 - `workspace_ids` (List of String) Restrict to these workspace ids.
 
 ### Read-Only
@@ -81,6 +82,7 @@ Read-Only:
 - `output_tokens` (Number) Output tokens.
 - `service_account_id` (String) Service account id; null unless grouped.
 - `service_tier` (String) Service tier; null unless grouped.
+- `speed` (String) Speed (`standard` or `fast`); null unless grouped.
 - `uncached_input_tokens` (Number) Uncached input tokens.
 - `web_search_requests` (Number) Server-side web search requests.
 - `workspace_id` (String) Workspace id; null unless grouped, and null for the default workspace.

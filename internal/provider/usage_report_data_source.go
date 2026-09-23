@@ -36,6 +36,7 @@ type usageReportModel struct {
 	InferenceGeos             types.List   `tfsdk:"inference_geos"`
 	ServiceAccountIDs         types.List   `tfsdk:"service_account_ids"`
 	AccountIDs                types.List   `tfsdk:"account_ids"`
+	Speeds                    types.List   `tfsdk:"speeds"`
 	Buckets                   types.List   `tfsdk:"buckets"`
 	TotalUncachedInputTokens  types.Int64  `tfsdk:"total_uncached_input_tokens"`
 	TotalCacheReadInputTokens types.Int64  `tfsdk:"total_cache_read_input_tokens"`
@@ -57,6 +58,7 @@ var attrTypesUsageResult = map[string]attr.Type{
 	"service_tier":                   types.StringType,
 	"context_window":                 types.StringType,
 	"inference_geo":                  types.StringType,
+	"speed":                          types.StringType,
 }
 
 var attrTypesUsageBucket = map[string]attr.Type{
@@ -85,8 +87,8 @@ func (d *usageReportDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 				Optional:            true,
 				Validators:          []validator.String{stringvalidator.OneOf("1d", "1h", "1m")},
 			},
-			"group_by": optionalStringList("Dimensions to group by: `account_id`, `api_key_id`, `context_window`, `inference_geo`, `model`, `service_account_id`, `service_tier`, `workspace_id`.",
-				listvalidator.ValueStringsAre(stringvalidator.OneOf("account_id", "api_key_id", "context_window", "inference_geo", "model", "service_account_id", "service_tier", "workspace_id"))),
+			"group_by": optionalStringList("Dimensions to group by: `account_id`, `api_key_id`, `context_window`, `inference_geo`, `model`, `service_account_id`, `service_tier`, `speed`, `workspace_id`. Grouping by `speed` sends the `fast-mode-2026-02-01` beta header.",
+				listvalidator.ValueStringsAre(stringvalidator.OneOf("account_id", "api_key_id", "context_window", "inference_geo", "model", "service_account_id", "service_tier", "speed", "workspace_id"))),
 			"api_key_ids":         optionalStringList("Restrict to these API key ids."),
 			"workspace_ids":       optionalStringList("Restrict to these workspace ids."),
 			"models":              optionalStringList("Restrict to these models."),
@@ -95,6 +97,7 @@ func (d *usageReportDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 			"inference_geos":      optionalStringList("Restrict to these inference geographies (`global`, `us`, `not_available`)."),
 			"service_account_ids": optionalStringList("Restrict to these service account ids."),
 			"account_ids":         optionalStringList("Restrict to these user account ids."),
+			"speeds":              optionalStringList("Restrict to these speeds (`standard`, `fast`). Setting this sends the `fast-mode-2026-02-01` beta header."),
 			"buckets": schema.ListNestedAttribute{
 				MarkdownDescription: "Time buckets, oldest first. Buckets with no usage have an empty `results` list.",
 				Computed:            true,
@@ -119,6 +122,7 @@ func (d *usageReportDataSource) Schema(_ context.Context, _ datasource.SchemaReq
 							"service_tier":                   dsString("Service tier; null unless grouped."),
 							"context_window":                 dsString("Context window; null unless grouped."),
 							"inference_geo":                  dsString("Inference geography; null unless grouped."),
+							"speed":                          dsString("Speed (`standard` or `fast`); null unless grouped."),
 						}},
 					},
 				}},
@@ -153,6 +157,7 @@ func (d *usageReportDataSource) Read(ctx context.Context, req datasource.ReadReq
 		InferenceGeos:     listStrings(&resp.Diagnostics, cfg.InferenceGeos),
 		ServiceAccountIDs: listStrings(&resp.Diagnostics, cfg.ServiceAccountIDs),
 		AccountIDs:        listStrings(&resp.Diagnostics, cfg.AccountIDs),
+		Speeds:            listStrings(&resp.Diagnostics, cfg.Speeds),
 	}
 	if resp.Diagnostics.HasError() {
 		return
@@ -186,6 +191,7 @@ func (d *usageReportDataSource) Read(ctx context.Context, req datasource.ReadReq
 				"service_tier":                   stringFromPtr(r.ServiceTier),
 				"context_window":                 stringFromPtr(r.ContextWindow),
 				"inference_geo":                  stringFromPtr(r.InferenceGeo),
+				"speed":                          stringFromPtr(r.Speed),
 			})
 		}
 		bucketVals = append(bucketVals, map[string]attr.Value{

@@ -65,6 +65,56 @@ data "anthropic_usage_report" "daily" {
 	})
 }
 
+// The speed dimension only works when the client sends the fast-mode beta
+// header, and the mock rejects it otherwise exactly as the API does. So this
+// passing is evidence the header actually went out, not just that the schema
+// accepts the attribute.
+func TestAccUsageReportDataSource_speed(t *testing.T) {
+	skipUnlessMock(t)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{{
+			Config: providerConfig + `
+data "anthropic_usage_report" "fast" {
+  starting_at = "2026-01-01T00:00:00Z"
+  ending_at   = "2026-01-03T00:00:00Z"
+  group_by    = ["model", "speed"]
+  speeds      = ["fast"]
+}
+`,
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue("data.anthropic_usage_report.fast", tfjsonpath.New("buckets").AtSliceIndex(0).AtMapKey("results").AtSliceIndex(0).AtMapKey("speed"), knownvalue.StringExact("fast")),
+				// Grouping by speed must not disturb the other dimensions.
+				statecheck.ExpectKnownValue("data.anthropic_usage_report.fast", tfjsonpath.New("buckets").AtSliceIndex(0).AtMapKey("results").AtSliceIndex(0).AtMapKey("model"), knownvalue.StringExact("claude-sonnet-5")),
+			},
+		}},
+	})
+}
+
+// A report that never mentions speed must still come back without it, which is
+// the case that breaks if the header is ever made unconditional and the API
+// starts returning the dimension to everyone.
+func TestAccUsageReportDataSource_speedAbsentWhenNotGrouped(t *testing.T) {
+	skipUnlessMock(t)
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 func() { testAccPreCheck(t) },
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{{
+			Config: providerConfig + `
+data "anthropic_usage_report" "plain" {
+  starting_at = "2026-01-01T00:00:00Z"
+  ending_at   = "2026-01-03T00:00:00Z"
+  group_by    = ["model"]
+}
+`,
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue("data.anthropic_usage_report.plain", tfjsonpath.New("buckets").AtSliceIndex(0).AtMapKey("results").AtSliceIndex(0).AtMapKey("speed"), knownvalue.Null()),
+			},
+		}},
+	})
+}
+
 func TestAccUsageReportDataSource_validation(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 func() { testAccPreCheck(t) },

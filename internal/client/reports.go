@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"net/url"
+	"slices"
 )
 
 // --- spend limit increase requests (Enterprise) -----------------------------
@@ -61,7 +62,17 @@ func (c *Client) GetUsageReport(ctx context.Context, p UsageReportParams) ([]Usa
 	addAll(q, "inference_geos[]", p.InferenceGeos)
 	addAll(q, "service_account_ids[]", p.ServiceAccountIDs)
 	addAll(q, "account_ids[]", p.AccountIDs)
-	return listToken[UsageBucket](ctx, c, CredAdmin, orgPath+"/usage_report/messages", q)
+	addAll(q, "speeds[]", p.Speeds)
+
+	// The speed dimension is gated on a beta header, and the header goes out
+	// only when the caller asked for that dimension. Sending it on every
+	// request would opt every reader of this report into a beta they did not
+	// ask for, and betas change without a deprecation period.
+	var opts []reqOption
+	if len(p.Speeds) > 0 || slices.Contains(p.GroupBy, "speed") {
+		opts = append(opts, withBeta(BetaFastMode))
+	}
+	return listToken[UsageBucket](ctx, c, CredAdmin, orgPath+"/usage_report/messages", q, opts...)
 }
 
 // GetCostReport returns every daily bucket of the cost report.

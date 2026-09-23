@@ -75,6 +75,11 @@ type UsageBucket struct {
 	Results    []UsageResult `json:"results"`
 }
 
+// BetaFastMode gates the `speed` dimension on the messages usage report. It
+// lives here rather than with the Managed Agents betas because fast mode is a
+// property of inference, not of agents.
+const BetaFastMode = "fast-mode-2026-02-01"
+
 // UsageReportParams filters GetUsageReport.
 type UsageReportParams struct {
 	StartingAt        string
@@ -89,6 +94,9 @@ type UsageReportParams struct {
 	InferenceGeos     []string
 	ServiceAccountIDs []string
 	AccountIDs        []string
+	// Speeds filters to `standard` or `fast`. Setting it, or grouping by
+	// `speed`, sends the fast-mode beta header; see GetUsageReport.
+	Speeds []string
 }
 
 // --- cost report ------------------------------------------------------------

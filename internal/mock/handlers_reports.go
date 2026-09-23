@@ -162,6 +162,20 @@ func (s *Server) usageReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	groupBy := r.URL.Query()["group_by[]"]
+	speeds := r.URL.Query()["speeds[]"]
+
+	// The real API gates the speed dimension on a beta header and rejects it
+	// with a 400 listing the dimensions it does accept. Mirroring that is what
+	// makes the client's "send the header only when asked" logic testable: a
+	// mock that accepted speed unconditionally would pass either way.
+	if slices.Contains(groupBy, "speed") || len(speeds) > 0 {
+		if !slices.Contains(strings.Split(r.Header.Get("Anthropic-Beta"), ","), client.BetaFastMode) {
+			writeError(w, http.StatusBadRequest, "invalid_request_error",
+				`Invalid `+"`group_by[]`"+`: "speed". Valid options are "account_id", "api_key_id", "context_window", "inference_geo", "model", "service_account_id", "service_tier", "workspace_id".`)
+			return
+		}
+	}
+
 	var buckets []client.UsageBucket
 	i := int64(0)
 	for t := start; t.Before(end) && len(buckets) < 31; t = t.Add(step) {
@@ -182,6 +196,15 @@ func (s *Server) usageReport(w http.ResponseWriter, r *http.Request) {
 		}
 		if slices.Contains(groupBy, "inference_geo") {
 			res.InferenceGeo = ptr("global")
+		}
+		if slices.Contains(groupBy, "speed") {
+			// When the caller also filtered, report the speed they asked for,
+			// so a filtered-and-grouped query does not contradict itself.
+			if len(speeds) > 0 {
+				res.Speed = ptr(speeds[0])
+			} else {
+				res.Speed = ptr("standard")
+			}
 		}
 		if slices.Contains(groupBy, "api_key_id") && len(s.store.apiKeys) > 0 {
 			res.APIKeyID = ptr(s.store.apiKeys[0].ID)
