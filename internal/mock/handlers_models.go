@@ -3,6 +3,7 @@ package mock
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 // Model fixtures mirror the live payload, including the part that shapes the
@@ -80,6 +81,7 @@ func (s *Server) requireInference(w http.ResponseWriter, r *http.Request) bool {
 func (s *Server) modelRoutes() {
 	s.handle("GET /v1/models", s.listModels)
 	s.handle("GET /v1/models/{id}", s.getModel)
+	s.handle("POST /v1/messages/count_tokens", s.countTokens)
 }
 
 func (s *Server) listModels(w http.ResponseWriter, r *http.Request) {
@@ -104,4 +106,65 @@ func (s *Server) getModel(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeError(w, http.StatusNotFound, "not_found_error", "model not found")
+}
+
+// countTokens mirrors /v1/messages/count_tokens closely enough to exercise the
+// data source: it refuses the inputs the live endpoint refuses, and returns a
+// deterministic count that grows with the system prompt, the messages and the
+// tools, so tests can assert that each one is actually sent.
+//
+// The arithmetic is not the real tokenizer and is not meant to be.
+func (s *Server) countTokens(w http.ResponseWriter, r *http.Request) {
+	if !s.requireInference(w, r) {
+		return
+	}
+	var in struct {
+		Model    string `json:"model"`
+		System   string `json:"system"`
+		Messages []struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		} `json:"messages"`
+		Tools json.RawMessage `json:"tools"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_request_error", "invalid JSON body")
+		return
+	}
+	if !mockModelExists(in.Model) {
+		writeError(w, http.StatusNotFound, "not_found_error", "model: "+in.Model)
+		return
+	}
+	if len(in.Messages) == 0 {
+		writeError(w, http.StatusBadRequest, "invalid_request_error", "messages: at least one message is required")
+		return
+	}
+	n := int64(4)
+	for i, m := range in.Messages {
+		if m.Role != "user" && m.Role != "assistant" {
+			writeError(w, http.StatusBadRequest, "invalid_request_error",
+				"messages."+strconv.Itoa(i)+": use the top-level 'system' parameter for the initial system prompt")
+			return
+		}
+		n += int64(len(m.Content)/4) + 3
+	}
+	if in.System != "" {
+		n += int64(len(in.System)/4) + 5
+	}
+	if len(in.Tools) > 0 && string(in.Tools) != "null" {
+		n += 500 + int64(len(in.Tools)/4)
+	}
+	writeJSON(w, map[string]int64{"input_tokens": n})
+}
+
+func mockModelExists(id string) bool {
+	for _, m := range mockModels {
+		var probe struct {
+			ID string `json:"id"`
+		}
+		if err := json.Unmarshal(m, &probe); err == nil && probe.ID == id {
+			return true
+		}
+	}
+	return false
 }

@@ -31,7 +31,7 @@ subcategory_for() {
       echo "Workspaces" ;;
     organization | user | users | invite | invites | api_key | api_keys | rate_limits)
       echo "Console Organization" ;;
-    model | models)
+    model | models | count_tokens)
       echo "Models" ;;
     *)
       return 1 ;;
