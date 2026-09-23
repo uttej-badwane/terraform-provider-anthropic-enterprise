@@ -14,7 +14,8 @@ or publish step.
    fourteen platform archives, the checksum file and an SBOM per archive, and
    signs the checksums with the release GPG key.
 4. The artifacts are verified before anything becomes installable (below).
-5. The release is published and the Terraform Registry ingests it.
+5. The release is published, and the Terraform and OpenTofu registries pick it
+   up (see below; they do not do it the same way).
 
 A push carrying no releasable commit is the normal case, not a failure.
 
@@ -57,6 +58,46 @@ automation continue from there.
 Any of these failing leaves the release a draft, so nothing unverified can be
 installed.
 
+## How the registries pick up a release
+
+**The Terraform Registry** is told about each release by a webhook, so a new
+version normally appears within a minute or two of being published.
+
+**The OpenTofu registry** has no webhook. It scans the repository's tags every
+15 minutes and downloads the assets for any version it has not seen.
+
+That scan can land in the gap between the tag being pushed and the release being
+published. semantic-release pushes the tag first, then the release sits as a
+draft for about five minutes while the checks above run, and a draft's assets
+cannot be downloaded. If OpenTofu scans in that window, the download fails and it
+records the version as errored. With a 15-minute scan and a five-minute window,
+roughly one release in three will hit this.
+
+This is a delay, not a loss. OpenTofu retries an errored version with a doubling
+backoff, starting at 30 minutes after the failure, and by then the release is
+published. So:
+
+- **A version missing from OpenTofu for up to about an hour needs nothing done.**
+  v0.9.0 was the first to hit this: OpenTofu scanned 28 seconds after its
+  draft was created and five minutes before it was published.
+- **The error is visible** in `versions_errors` in
+  [the provider's metadata file](https://github.com/opentofu/registry/blob/main/providers/u/uttej-badwane/anthropic-enterprise.json),
+  typically as `checksums not found in release`.
+- **Check what each registry actually serves** rather than the release page:
+
+  ```sh
+  curl -s https://registry.terraform.io/v1/providers/uttej-badwane/anthropic-enterprise/versions | jq -r '.versions[].version'
+  curl -s https://registry.opentofu.org/v1/providers/uttej-badwane/anthropic-enterprise/versions | jq -r '.versions[].version'
+  ```
+
+- **Worth investigating** only if a version is still absent after several hours,
+  or the recorded error is anything other than missing checksums.
+
+Removing the window would mean verifying the artifacts before the tag becomes
+public, which is a restructuring of the part of the pipeline that signs and
+publishes releases. For a delay that clears itself on one registry, that
+trade has not been worth making.
+
 ## Dependency updates
 
 Dependabot's patch and minor updates merge themselves once every required check
@@ -96,6 +137,11 @@ automation is unavailable; the artifacts are identical either way.
   added.
 - The provider published once through the registry, which installs the webhook
   that ingests every later release.
+- The provider listed in the OpenTofu registry
+  ([opentofu/registry#5532](https://github.com/opentofu/registry/pull/5532)),
+  with the same release key registered there
+  ([#5533](https://github.com/opentofu/registry/pull/5533)) so OpenTofu verifies
+  signatures rather than skipping them.
 
 ## CHANGELOG.md
 
