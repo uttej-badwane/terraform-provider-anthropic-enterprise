@@ -257,21 +257,45 @@ type RateLimitValue struct {
 
 // RateLimit is an organization rate limit group.
 type RateLimit struct {
-	ID        string           `json:"id"`
+	ID string `json:"id"`
+	// Group is the current field; GroupType is deprecated ("Use group.type
+	// instead; group_type is still returned and always equals group.type").
+	// Read through EffectiveGroupType.
+	Group     *RateLimitGroup  `json:"group"`
 	GroupType string           `json:"group_type"`
 	Limits    []RateLimitValue `json:"limits"`
 	Models    []string         `json:"models"`
 	Type      string           `json:"type"`
 }
 
+// EffectiveGroupType returns group.type, falling back to the deprecated group_type.
+func (r RateLimit) EffectiveGroupType() string {
+	if r.Group != nil && r.Group.Type != "" {
+		return r.Group.Type
+	}
+	return r.GroupType
+}
+
 // WorkspaceRateLimit is a workspace override of a rate limit group.
 type WorkspaceRateLimit struct {
+	// Group is the current field; GroupType is deprecated ("Use group.type
+	// instead; group_type is still returned and always equals group.type").
+	// Read through EffectiveGroupType.
+	Group       *RateLimitGroup  `json:"group"`
 	GroupType   string           `json:"group_type"`
 	Limits      []RateLimitValue `json:"limits"`
 	Models      []string         `json:"models"`
 	RateLimitID string           `json:"rate_limit_id"`
 	Type        string           `json:"type"`
 	WorkspaceID string           `json:"workspace_id"`
+}
+
+// EffectiveGroupType returns group.type, falling back to the deprecated group_type.
+func (r WorkspaceRateLimit) EffectiveGroupType() string {
+	if r.Group != nil && r.Group.Type != "" {
+		return r.Group.Type
+	}
+	return r.GroupType
 }
 
 // ServiceAccount is a non-human principal.
@@ -622,4 +646,11 @@ type ComplianceSettings struct {
 // ComplianceSettingsUpdate is the update body.
 type ComplianceSettingsUpdate struct {
 	State ComplianceState `json:"state"`
+}
+
+// RateLimitGroup is the group a rate-limit entry applies to. The API returns
+// one of several shapes discriminated by type; only the fields every shape
+// shares are decoded here.
+type RateLimitGroup struct {
+	Type string `json:"type"`
 }

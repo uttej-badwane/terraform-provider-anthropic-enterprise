@@ -92,3 +92,37 @@ func TestRBACGroupMemberPrefersRBACGroupID(t *testing.T) {
 		})
 	}
 }
+
+// Rate limits: group_type is deprecated in favour of group.type ("group_type
+// is still returned and always equals group.type").
+func TestRateLimitPrefersGroupType(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		body string
+		want string
+	}{
+		"deprecated field removed":  {`{"id":"rl","group":{"type":"model_group","id":"rlg_1"}}`, "model_group"},
+		"only the deprecated field": {`{"id":"rl","group_type":"batch"}`, "batch"},
+		"both present":              {`{"id":"rl","group":{"type":"batch"},"group_type":"batch"}`, "batch"},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			var rl client.RateLimit
+			var wrl client.WorkspaceRateLimit
+			if err := json.Unmarshal([]byte(tc.body), &rl); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if err := json.Unmarshal([]byte(tc.body), &wrl); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			if got := rl.EffectiveGroupType(); got != tc.want {
+				t.Errorf("RateLimit.EffectiveGroupType() = %q, want %q", got, tc.want)
+			}
+			if got := wrl.EffectiveGroupType(); got != tc.want {
+				t.Errorf("WorkspaceRateLimit.EffectiveGroupType() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
