@@ -145,8 +145,8 @@ func (r *rbacGroupMemberResource) ImportState(ctx context.Context, req resource.
 }
 
 func flattenRBACGroupMember(m *client.RBACGroupMember, s *rbacGroupMemberModel) {
-	s.ID = types.StringValue(compositeID(m.GroupID, m.UserID))
-	s.GroupID = types.StringValue(m.GroupID)
+	s.ID = types.StringValue(compositeID(m.EffectiveGroupID(), m.UserID))
+	s.GroupID = types.StringValue(m.EffectiveGroupID())
 	s.UserID = types.StringValue(m.UserID)
 	s.Email = types.StringValue(m.Email)
 	s.CreatedAt = types.StringValue(m.CreatedAt)

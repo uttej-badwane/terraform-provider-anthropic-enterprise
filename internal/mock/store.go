@@ -69,9 +69,9 @@ func (s *Server) seed() {
 		Status:         "active", Type: "api_key", WorkspaceID: nil,
 	})
 	st.rateLimits = []client.RateLimit{
-		{ID: "rl_model_group_sonnet", GroupType: "model_group", Type: "rate_limit", Models: []string{"claude-sonnet-5"},
+		{ID: "rl_model_group_sonnet", Group: &client.RateLimitGroup{Type: "model_group"}, GroupType: "model_group", Type: "rate_limit", Models: []string{"claude-sonnet-5"},
 			Limits: []client.RateLimitValue{{Type: "requests_per_minute", Value: 4000}, {Type: "input_tokens_per_minute", Value: 2000000}}},
-		{ID: "rl_batch", GroupType: "batch", Type: "rate_limit",
+		{ID: "rl_batch", Group: &client.RateLimitGroup{Type: "batch"}, GroupType: "batch", Type: "rate_limit",
 			Limits: []client.RateLimitValue{{Type: "requests_per_minute", Value: 1000}}},
 	}
 	st.roles = []*client.RBACRole{
@@ -79,7 +79,7 @@ func (s *Server) seed() {
 		{ID: s.nextID("rbac_role"), CreatedAt: now(), UpdatedAt: now(), Name: "Project Editor", Type: "rbac_role"},
 	}
 	st.groups = append(st.groups, &client.RBACGroup{ID: s.nextID("rbac_group"), CreatedAt: now(), UpdatedAt: now(),
-		Name: "SCIM Synced", Roles: []string{st.roles[0].ID}, SourceType: "scim", Type: "rbac_group"})
+		Name: "SCIM Synced", RoleIDs: []string{st.roles[0].ID}, Roles: []string{st.roles[0].ID}, SourceType: "scim", Type: "rbac_group"})
 	s.seedIncreaseRequests()
 	s.seedAgents()
 }
@@ -167,7 +167,7 @@ func (s *Server) SeedWorkspaceRateLimit(workspaceID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.store.wsRateLimits[workspaceID] = append(s.store.wsRateLimits[workspaceID], client.WorkspaceRateLimit{
-		GroupType: "model_group", Models: []string{"claude-sonnet-5"}, RateLimitID: "rl_model_group_sonnet",
+		Group: &client.RateLimitGroup{Type: "model_group"}, GroupType: "model_group", Models: []string{"claude-sonnet-5"}, RateLimitID: "rl_model_group_sonnet",
 		Type: "workspace_rate_limit", WorkspaceID: workspaceID,
 		Limits: []client.RateLimitValue{{Type: "requests_per_minute", Value: 1000, OrgLimit: ptr(int64(4000))}},
 	})

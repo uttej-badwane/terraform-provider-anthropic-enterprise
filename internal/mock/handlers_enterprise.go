@@ -39,7 +39,7 @@ func (s *Server) createGroup(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "invalid_request_error", "name must be between 1 and 255 characters")
 		return
 	}
-	g := &client.RBACGroup{ID: s.nextID("rbac_group"), CreatedAt: now(), UpdatedAt: now(), Name: in.Name, Roles: []string{}, SourceType: "direct", Type: "rbac_group"}
+	g := &client.RBACGroup{ID: s.nextID("rbac_group"), CreatedAt: now(), UpdatedAt: now(), Name: in.Name, RoleIDs: []string{}, Roles: []string{}, SourceType: "direct", Type: "rbac_group"}
 	s.store.groups = append(s.store.groups, g)
 	writeJSON(w, g)
 }
@@ -149,7 +149,7 @@ func (s *Server) addGroupMember(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	m := &client.RBACGroupMember{CreatedAt: now(), Email: u.Email, GroupID: g.ID, Type: "rbac_group_member", UserID: u.ID}
+	m := &client.RBACGroupMember{CreatedAt: now(), Email: u.Email, RBACGroupID: g.ID, GroupID: g.ID, Type: "rbac_group_member", UserID: u.ID}
 	s.store.groupMembers = append(s.store.groupMembers, m)
 	writeJSON(w, m)
 }

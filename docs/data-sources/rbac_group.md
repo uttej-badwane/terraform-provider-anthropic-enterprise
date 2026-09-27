@@ -29,6 +29,7 @@ data "anthropic_rbac_group" "engineering" {
 ### Read-Only
 
 - `created_at` (String) Creation timestamp.
-- `roles` (List of String) RBAC role ids assigned to the group; null when temporarily unavailable.
+- `role_ids` (List of String) RBAC role ids attached to the group. Null when the API reports the list as temporarily unavailable, which is distinct from `[]`, a group with no roles.
+- `roles` (List of String, Deprecated) Deprecated: use `role_ids`, which always carries the same value. The API has deprecated `roles` in favour of `role_ids`; this attribute will be removed in a future release.
 - `source_type` (String) `direct` or `scim`.
 - `updated_at` (String) Last update timestamp.

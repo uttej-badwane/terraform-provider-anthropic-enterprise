@@ -32,7 +32,8 @@ resource "anthropic_rbac_group" "engineering" {
 
 - `created_at` (String) Creation timestamp (RFC 3339).
 - `id` (String) Group id (`rbac_group_...`).
-- `roles` (List of String) RBAC role ids assigned to the group (read-only). Null when the API reports the list as temporarily unavailable.
+- `role_ids` (List of String) RBAC role ids attached to the group. Null when the API reports the list as temporarily unavailable, which is distinct from `[]`, a group with no roles.
+- `roles` (List of String, Deprecated) Deprecated: use `role_ids`, which always carries the same value. The API has deprecated `roles` in favour of `role_ids`; this attribute will be removed in a future release.
 - `source_type` (String) How the group is managed: `direct` (API/console) or `scim`.
 - `updated_at` (String) Last update timestamp (RFC 3339).
 
