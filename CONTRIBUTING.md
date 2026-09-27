@@ -102,6 +102,47 @@ Sweeping needs the same credentials the live tiers do and acts on a real
 organization. Only names beginning with `tf-acc-` are touched; that prefix is
 the entire safety boundary, so never widen it to tidy up something else.
 
+## Keeping up with API changes
+
+Anthropic marks a field deprecated in the API reference well before it stops
+sending it. Until then everything works. On the day it stops, a client still
+reading it gets an empty value back, which in Terraform means a diff for every
+object in state, or a replacement where the field is part of an id.
+
+`internal/apidrift` finds these while the old name still works. It reads the
+reference, which is published as markdown, and compares every deprecated
+response field with what `internal/client` decodes. It runs weekly from
+`.github/workflows/api-drift.yml`, and keeps one issue labelled `api-drift` open
+for as long as there is something to act on, closing it when there is not.
+
+```sh
+go build -o /tmp/apidrift ./internal/apidrift/cmd/apidrift && /tmp/apidrift
+```
+
+**When the issue lists a field**, decode both names and read through an
+accessor that prefers the new one, as `RBACGroup.EffectiveRoleIDs` does. Keep the
+old name as a fallback until the API stops sending it; the report lists those
+fallbacks separately so they can be removed later. Add a test that decodes a
+payload without the deprecated field, since that is the case that breaks.
+
+**When it is a false alarm**, add an entry under `ignore` in
+`internal/apidrift/manifest.json` with the reason. An entry without a reason
+fails validation, so the judgement is written down.
+
+**When you add a resource or data source**, map its reference page to the
+client type its response decodes into, in the same manifest. Nested objects are
+followed through the Go struct fields, so only the root type is needed. The
+weekly report lists client types no page reaches, and
+`TestManifestMatchesTheClient` fails on every pull request if an entry names a
+type that no longer exists.
+
+It also lists release notes from the past week that mention a retirement,
+removal or change of behaviour in an area the provider covers, because not
+every change is attached to a field. A scope being retired, for example, is
+announced only in prose.
+
+What it cannot catch is a change Anthropic does not document.
+
 ## Conventions
 
 * Terraform Plugin Framework only. `terraform-plugin-sdk/v2` imports are rejected by the linter.

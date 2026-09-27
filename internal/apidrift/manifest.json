@@ -1,0 +1,219 @@
+{
+  "pages": [
+    {
+      "page": "beta/organization/retrieve",
+      "type": "Organization"
+    },
+    {
+      "page": "beta/organization/users/retrieve",
+      "type": "User"
+    },
+    {
+      "page": "beta/organization/invites/retrieve",
+      "type": "Invite"
+    },
+    {
+      "page": "beta/organization/workspaces/retrieve",
+      "type": "Workspace"
+    },
+    {
+      "page": "beta/organization/workspaces/members/retrieve",
+      "type": "WorkspaceMember"
+    },
+    {
+      "page": "beta/organization/workspaces/rate_limits/list",
+      "type": "WorkspaceRateLimit"
+    },
+    {
+      "page": "beta/organization/workspaces/service_accounts/retrieve",
+      "type": "ServiceAccountWorkspaceMember"
+    },
+    {
+      "page": "beta/organization/api_keys/retrieve",
+      "type": "APIKey"
+    },
+    {
+      "page": "beta/organization/external_keys/retrieve",
+      "type": "ExternalKey"
+    },
+    {
+      "page": "beta/organization/external_keys/validate",
+      "type": "ExternalKeyValidation"
+    },
+    {
+      "page": "beta/organization/rate_limits/list",
+      "type": "RateLimit"
+    },
+    {
+      "page": "beta/organization/compliance_settings/retrieve",
+      "type": "ComplianceSettings"
+    },
+    {
+      "page": "beta/organization/service_accounts/retrieve",
+      "type": "ServiceAccount"
+    },
+    {
+      "page": "beta/organization/federation/issuers/retrieve",
+      "type": "FederationIssuer"
+    },
+    {
+      "page": "beta/organization/federation/rules/retrieve",
+      "type": "FederationRule"
+    },
+    {
+      "page": "beta/organization/federation/rules/workspaces/list",
+      "type": "FederationRuleWorkspace"
+    },
+    {
+      "page": "beta/organization/usage_report/retrieve_messages",
+      "type": "UsageBucket"
+    },
+    {
+      "page": "beta/organization/usage_report/retrieve_claude_code",
+      "type": "ClaudeCodeUsage"
+    },
+    {
+      "page": "beta/organization/cost_report/retrieve",
+      "type": "CostBucket"
+    },
+    {
+      "page": "beta/organization/rbac_groups/retrieve",
+      "type": "RBACGroup"
+    },
+    {
+      "page": "beta/organization/rbac_groups/members/list",
+      "type": "RBACGroupMember"
+    },
+    {
+      "page": "beta/organization/rbac_roles/retrieve",
+      "type": "RBACRole"
+    },
+    {
+      "page": "beta/organization/rbac_roles/permissions/list",
+      "type": "RBACRolePermission"
+    },
+    {
+      "page": "beta/organization/spend_limits/retrieve",
+      "type": "SpendLimit"
+    },
+    {
+      "page": "beta/organization/spend_limits/list_effective",
+      "type": "SpendSummary"
+    },
+    {
+      "page": "beta/organization/spend_limits/increase_requests/retrieve",
+      "type": "SpendLimitIncreaseRequest"
+    },
+    {
+      "page": "beta/organization/analytics/users/list",
+      "type": "AnalyticsUserActivity"
+    },
+    {
+      "page": "beta/organization/analytics/retrieve_summaries",
+      "type": "AnalyticsSummary"
+    },
+    {
+      "page": "beta/organization/analytics/usage/list",
+      "type": "AnalyticsUsageBucket"
+    },
+    {
+      "page": "beta/organization/analytics/usage/list_by_user",
+      "type": "AnalyticsUserUsageRow"
+    },
+    {
+      "page": "beta/organization/analytics/cost/list",
+      "type": "AnalyticsCostBucket"
+    },
+    {
+      "page": "beta/organization/analytics/cost/list_by_user",
+      "type": "AnalyticsUserCostRow"
+    },
+    {
+      "page": "beta/organization/analytics/artifacts/list",
+      "type": "AnalyticsArtifactUsage"
+    },
+    {
+      "page": "beta/organization/analytics/connectors/list",
+      "type": "AnalyticsConnectorUsage"
+    },
+    {
+      "page": "beta/organization/analytics/plugins/list",
+      "type": "AnalyticsPluginUsage"
+    },
+    {
+      "page": "beta/organization/analytics/skills/list",
+      "type": "AnalyticsSkillUsage"
+    },
+    {
+      "page": "compliance/organizations/list",
+      "type": "ComplianceOrganization"
+    },
+    {
+      "page": "compliance/organizations/users/list",
+      "type": "ComplianceUser"
+    },
+    {
+      "page": "compliance/organizations/roles/retrieve",
+      "type": "ComplianceRole"
+    },
+    {
+      "page": "compliance/organizations/settings/retrieve",
+      "type": "EffectiveOrganizationSettings"
+    },
+    {
+      "page": "compliance/groups/retrieve",
+      "type": "ComplianceGroup"
+    },
+    {
+      "page": "compliance/groups/members/list",
+      "type": "ComplianceGroupMember"
+    },
+    {
+      "page": "beta/agents/retrieve",
+      "type": "Agent"
+    },
+    {
+      "page": "beta/environments/retrieve",
+      "type": "Environment"
+    },
+    {
+      "page": "beta/vaults/retrieve",
+      "type": "Vault"
+    },
+    {
+      "page": "beta/vaults/credentials/retrieve",
+      "type": "VaultCredential"
+    },
+    {
+      "page": "beta/deployments/retrieve",
+      "type": "Deployment"
+    },
+    {
+      "page": "beta/deployment_runs/retrieve",
+      "type": "DeploymentRun"
+    },
+    {
+      "page": "beta/memory_stores/retrieve",
+      "type": "MemoryStore"
+    },
+    {
+      "page": "beta/skills/retrieve",
+      "type": "Skill"
+    },
+    {
+      "page": "beta/skills/versions/retrieve",
+      "type": "SkillVersion"
+    },
+    {
+      "page": "models/retrieve",
+      "type": "Model"
+    }
+  ],
+  "ignore": [
+    {
+      "type": "ProviderConfig",
+      "field": "role_arn",
+      "reason": "Anthropic now ignores role_arn and reaches the KMS key through its own intermediate role. The client decodes it but the anthropic_external_key schema does not expose it, so it cannot read back as a change or trigger a replacement."
+    }
+  ]
+}
