@@ -257,21 +257,45 @@ type RateLimitValue struct {
 
 // RateLimit is an organization rate limit group.
 type RateLimit struct {
-	ID        string           `json:"id"`
+	ID string `json:"id"`
+	// Group is the current field; GroupType is deprecated ("Use group.type
+	// instead; group_type is still returned and always equals group.type").
+	// Read through EffectiveGroupType.
+	Group     *RateLimitGroup  `json:"group"`
 	GroupType string           `json:"group_type"`
 	Limits    []RateLimitValue `json:"limits"`
 	Models    []string         `json:"models"`
 	Type      string           `json:"type"`
 }
 
+// EffectiveGroupType returns group.type, falling back to the deprecated group_type.
+func (r RateLimit) EffectiveGroupType() string {
+	if r.Group != nil && r.Group.Type != "" {
+		return r.Group.Type
+	}
+	return r.GroupType
+}
+
 // WorkspaceRateLimit is a workspace override of a rate limit group.
 type WorkspaceRateLimit struct {
+	// Group is the current field; GroupType is deprecated ("Use group.type
+	// instead; group_type is still returned and always equals group.type").
+	// Read through EffectiveGroupType.
+	Group       *RateLimitGroup  `json:"group"`
 	GroupType   string           `json:"group_type"`
 	Limits      []RateLimitValue `json:"limits"`
 	Models      []string         `json:"models"`
 	RateLimitID string           `json:"rate_limit_id"`
 	Type        string           `json:"type"`
 	WorkspaceID string           `json:"workspace_id"`
+}
+
+// EffectiveGroupType returns group.type, falling back to the deprecated group_type.
+func (r WorkspaceRateLimit) EffectiveGroupType() string {
+	if r.Group != nil && r.Group.Type != "" {
+		return r.Group.Type
+	}
+	return r.GroupType
 }
 
 // ServiceAccount is a non-human principal.
@@ -483,13 +507,31 @@ type ExternalKeyValidation struct {
 
 // RBACGroup is a Claude Enterprise group.
 type RBACGroup struct {
-	ID         string   `json:"id"`
-	CreatedAt  string   `json:"created_at"`
-	Name       string   `json:"name"`
+	ID        string `json:"id"`
+	CreatedAt string `json:"created_at"`
+	Name      string `json:"name"`
+	// RoleIDs is the current field. Roles is its deprecated predecessor: the
+	// API reference marks it "Use role_ids instead; roles always has the same
+	// value", and it is still decoded only so that a response from before
+	// role_ids existed keeps working. Read through EffectiveRoleIDs.
+	RoleIDs    []string `json:"role_ids"`
 	Roles      []string `json:"roles"`
 	SourceType string   `json:"source_type"`
 	Type       string   `json:"type"`
 	UpdatedAt  string   `json:"updated_at"`
+}
+
+// EffectiveRoleIDs returns role_ids, falling back to the deprecated roles.
+//
+// nil and empty mean different things and are both preserved: the API sends
+// null when role data is temporarily unavailable and [] when the group has no
+// roles. Falling back only on nil means an explicit empty role_ids is never
+// overridden by a stale roles value.
+func (g RBACGroup) EffectiveRoleIDs() []string {
+	if g.RoleIDs != nil {
+		return g.RoleIDs
+	}
+	return g.Roles
 }
 
 // RBACGroupWrite is the create/update body.
@@ -501,9 +543,22 @@ type RBACGroupWrite struct {
 type RBACGroupMember struct {
 	CreatedAt string `json:"created_at"`
 	Email     string `json:"email"`
-	GroupID   string `json:"group_id"`
-	Type      string `json:"type"`
-	UserID    string `json:"user_id"`
+	// RBACGroupID is the current field. GroupID is deprecated ("Use
+	// rbac_group_id instead; group_id always has the same value") and decoded
+	// only as a fallback. Read through EffectiveGroupID.
+	RBACGroupID string `json:"rbac_group_id"`
+	GroupID     string `json:"group_id"`
+	Type        string `json:"type"`
+	UserID      string `json:"user_id"`
+}
+
+// EffectiveGroupID returns rbac_group_id, falling back to the deprecated
+// group_id.
+func (m RBACGroupMember) EffectiveGroupID() string {
+	if m.RBACGroupID != "" {
+		return m.RBACGroupID
+	}
+	return m.GroupID
 }
 
 // RBACGroupMemberAdd is the add body.
@@ -591,4 +646,11 @@ type ComplianceSettings struct {
 // ComplianceSettingsUpdate is the update body.
 type ComplianceSettingsUpdate struct {
 	State ComplianceState `json:"state"`
+}
+
+// RateLimitGroup is the group a rate-limit entry applies to. The API returns
+// one of several shapes discriminated by type; only the fields every shape
+// shares are decoded here.
+type RateLimitGroup struct {
+	Type string `json:"type"`
 }

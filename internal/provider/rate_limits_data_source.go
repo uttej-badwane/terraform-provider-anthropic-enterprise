@@ -123,7 +123,7 @@ func (d *rateLimitsDataSource) Read(ctx context.Context, req datasource.ReadRequ
 		resp.Diagnostics.Append(d1...)
 		resp.Diagnostics.Append(d2...)
 		obj, d3 := types.ObjectValue(attrTypesRateLimit, map[string]attr.Value{
-			"id": types.StringValue(rl.ID), "group_type": types.StringValue(rl.GroupType), "models": models, "limits": limits,
+			"id": types.StringValue(rl.ID), "group_type": types.StringValue(rl.EffectiveGroupType()), "models": models, "limits": limits,
 		})
 		resp.Diagnostics.Append(d3...)
 		objs = append(objs, obj)
@@ -205,7 +205,7 @@ func (d *workspaceRateLimitsDataSource) Read(ctx context.Context, req datasource
 		resp.Diagnostics.Append(d1...)
 		resp.Diagnostics.Append(d2...)
 		obj, d3 := types.ObjectValue(attrTypesWorkspaceRateLimit, map[string]attr.Value{
-			"rate_limit_id": types.StringValue(rl.RateLimitID), "group_type": types.StringValue(rl.GroupType), "models": models, "limits": limits,
+			"rate_limit_id": types.StringValue(rl.RateLimitID), "group_type": types.StringValue(rl.EffectiveGroupType()), "models": models, "limits": limits,
 		})
 		resp.Diagnostics.Append(d3...)
 		objs = append(objs, obj)
