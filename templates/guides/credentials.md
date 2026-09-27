@@ -71,10 +71,70 @@ for you.
 `sk-ant-api03-`. If the key can reach more than one workspace, set
 `workspace_id` so Managed Agents calls target the right one.
 
-**Enterprise, compliance and analytics keys** — issued by Anthropic for a
-claude.ai Enterprise organization. They cannot be minted through the Admin API,
-and neither can Admin keys, which is why `anthropic_api_key` is import-only:
-the provider can manage a key's name and status but cannot create one.
+**Enterprise, compliance and analytics keys** — created by the primary owner of
+a Claude Enterprise organization in **claude.ai → Organization settings → API**,
+each carrying the scopes selected when it is created. The next section maps
+scopes to what they unlock. None of these can be minted through the Admin API,
+and neither can Console Admin keys, which is why `anthropic_api_key` is
+import-only: the provider can manage a key's name and status but cannot create
+one.
+
+## Claude Enterprise keys and scopes
+
+A key created in claude.ai can only do what its scopes allow, so a key that
+works for one resource can fail on the next with a 403. Pick scopes from what
+the configuration manages:
+
+| Scope | Unlocks in this provider |
+|---|---|
+| `read:members` | Reading users and invites; `anthropic_rbac_roles`, and `anthropic_rbac_role` including its permissions. There is no separate role scope. |
+| `write:members` | `anthropic_user` role changes and removal; `anthropic_invite` create and withdraw |
+| `read:rbac_groups` | Reading `anthropic_rbac_group` and `anthropic_rbac_group_member` |
+| `write:rbac_groups` | Managing `anthropic_rbac_group` and `anthropic_rbac_group_member`. Also needed by `anthropic_invite` when `rbac_group_ids` is set, because joining a group can grant its roles' permissions. |
+| `read:spend_limits` | Reading spend limits and spend limit increase requests |
+| `write:spend_limits` | Managing `anthropic_spend_limit` |
+| `read:analytics` | Every `anthropic_analytics_*` data source |
+| `read:compliance_org_data` | `anthropic_compliance_organizations`, `anthropic_compliance_role(s)`, `anthropic_compliance_groups`, `anthropic_compliance_effective_settings` |
+| `read:compliance_user_data` | `anthropic_compliance_organization_users` and `anthropic_compliance_group_members`, which list people rather than directory structure |
+| `read:org_audit` | A read-only scope covering every member, invite, group and role read, plus the Compliance API reads. It grants no writes. |
+
+**Group and audit scopes need a key created for all organizations.** Groups
+belong to the enterprise as a whole rather than to one organization, so
+`read:rbac_groups`, `write:rbac_groups` and `read:org_audit` are unavailable on
+a key limited to a single organization. In the key dialog they appear greyed out
+until **All organizations** is selected.
+
+**Which attribute a key goes in.** Anthropic calls the claude.ai key that
+carries the members, groups and spend limit scopes an *Admin API key*, and it
+begins `sk-ant-admin01-` like a Console Admin key does. In this provider it
+still belongs in **`enterprise_api_key`**, not `admin_api_key`, which is for a
+Claude Console organization. Put it in `admin_api_key` and members and invites
+will work, because those endpoints are shared, but groups and spend limits will
+ask for `enterprise_api_key`.
+
+A key carrying the compliance scopes goes in `compliance_api_key`, and one
+carrying `read:analytics` in `analytics_api_key`. Both fall back to
+`enterprise_api_key`, so a single key holding every scope you need can be set
+once.
+
+**Retired scope.** Until June 30, 2026, effective organization settings needed
+`read:compliance_org_settings`. That scope has been retired: a key carrying only
+it now gets a 403 from `anthropic_compliance_effective_settings`. Create a key
+with `read:compliance_org_data` instead.
+
+**What is deliberately not covered.** `read:compliance_activities` returns the
+activity feed, and beyond the two directory data sources above,
+`read:compliance_user_data` also reaches chat, file and session content. Both
+would copy personal data, including email addresses, IP addresses and
+conversation text, into Terraform state, which is stored and shared far more
+widely than an audit system. `delete:compliance_user_data`
+is an irreversible one-off action rather than something to declare.
+`read:plugins` and `write:plugins` have no documented API yet.
+
+Anthropic documents these in
+[User management](https://platform.claude.com/docs/en/manage-claude/user-management),
+[Spend Limits API](https://platform.claude.com/docs/en/manage-claude/spend-limits-api)
+and [Compliance organization data](https://platform.claude.com/docs/en/manage-claude/compliance-org-data).
 
 ## Reading the errors
 
