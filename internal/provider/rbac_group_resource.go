@@ -36,6 +36,7 @@ type rbacGroupModel struct {
 	ID         types.String `tfsdk:"id"`
 	Name       types.String `tfsdk:"name"`
 	SourceType types.String `tfsdk:"source_type"`
+	RoleIDs    types.List   `tfsdk:"role_ids"`
 	Roles      types.List   `tfsdk:"roles"`
 	CreatedAt  types.String `tfsdk:"created_at"`
 	UpdatedAt  types.String `tfsdk:"updated_at"`
@@ -66,8 +67,14 @@ func (r *rbacGroupResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
+			"role_ids": schema.ListAttribute{
+				MarkdownDescription: "RBAC role ids attached to the group. Null when the API reports the list as temporarily unavailable, which is distinct from `[]`, a group with no roles.",
+				ElementType:         types.StringType,
+				Computed:            true,
+			},
 			"roles": schema.ListAttribute{
-				MarkdownDescription: "RBAC role ids assigned to the group (read-only). Null when the API reports the list as temporarily unavailable.",
+				MarkdownDescription: "Deprecated: use `role_ids`, which always carries the same value. The API has deprecated `roles` in favour of `role_ids`; this attribute will be removed in a future release.",
+				DeprecationMessage:  "Use role_ids instead. The API has deprecated roles, and this attribute will be removed in a future release.",
 				ElementType:         types.StringType,
 				Computed:            true,
 			},
@@ -172,8 +179,9 @@ func flattenRBACGroup(ctx context.Context, g *client.RBACGroup, m *rbacGroupMode
 	m.SourceType = types.StringValue(g.SourceType)
 	m.CreatedAt = types.StringValue(g.CreatedAt)
 	m.UpdatedAt = types.StringValue(g.UpdatedAt)
-	roles, d := stringList(ctx, g.Roles)
+	roles, d := stringList(ctx, g.EffectiveRoleIDs())
 	diags.Append(d...)
+	m.RoleIDs = roles
 	m.Roles = roles
 	return diags
 }
@@ -182,6 +190,7 @@ var attrTypesRBACGroup = map[string]attr.Type{
 	"id":          types.StringType,
 	"name":        types.StringType,
 	"source_type": types.StringType,
+	"role_ids":    types.ListType{ElemType: types.StringType},
 	"roles":       types.ListType{ElemType: types.StringType},
 	"created_at":  types.StringType,
 	"updated_at":  types.StringType,
@@ -189,12 +198,13 @@ var attrTypesRBACGroup = map[string]attr.Type{
 
 func rbacGroupObject(ctx context.Context, g *client.RBACGroup) (types.Object, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	roles, d := stringList(ctx, g.Roles)
+	roles, d := stringList(ctx, g.EffectiveRoleIDs())
 	diags.Append(d...)
 	obj, d := types.ObjectValue(attrTypesRBACGroup, map[string]attr.Value{
 		"id":          types.StringValue(g.ID),
 		"name":        types.StringValue(g.Name),
 		"source_type": types.StringValue(g.SourceType),
+		"role_ids":    roles,
 		"roles":       roles,
 		"created_at":  types.StringValue(g.CreatedAt),
 		"updated_at":  types.StringValue(g.UpdatedAt),

@@ -25,6 +25,9 @@ func TestAccRBACGroupResource(t *testing.T) {
 					statecheck.ExpectKnownValue("anthropic_rbac_group.test", tfjsonpath.New("name"), knownvalue.StringExact(name)),
 					statecheck.ExpectKnownValue("anthropic_rbac_group.test", tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^rbac_group_`))),
 					statecheck.ExpectKnownValue("anthropic_rbac_group.test", tfjsonpath.New("source_type"), knownvalue.StringExact("direct")),
+					// role_ids is the current field and roles its deprecated alias; both
+					// must carry the same value until roles is removed.
+					statecheck.ExpectKnownValue("anthropic_rbac_group.test", tfjsonpath.New("role_ids"), knownvalue.ListExact([]knownvalue.Check{})),
 					statecheck.ExpectKnownValue("anthropic_rbac_group.test", tfjsonpath.New("roles"), knownvalue.ListExact([]knownvalue.Check{})),
 				},
 			},
@@ -110,7 +113,11 @@ data "anthropic_rbac_groups" "all" {
 `, name),
 				ConfigStateChecks: []statecheck.StateCheck{
 					statecheck.ExpectKnownValue("data.anthropic_rbac_groups.all", tfjsonpath.New("groups"), knownvalue.ListPartial(map[int]knownvalue.Check{
-						0: knownvalue.ObjectPartial(map[string]knownvalue.Check{"source_type": knownvalue.StringExact("scim")}),
+						0: knownvalue.ObjectPartial(map[string]knownvalue.Check{
+							"source_type": knownvalue.StringExact("scim"),
+							"role_ids":    knownvalue.ListSizeExact(1),
+							"roles":       knownvalue.ListSizeExact(1),
+						}),
 					})),
 				},
 			},

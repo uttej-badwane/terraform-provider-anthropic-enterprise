@@ -79,7 +79,7 @@ func (s *Server) seed() {
 		{ID: s.nextID("rbac_role"), CreatedAt: now(), UpdatedAt: now(), Name: "Project Editor", Type: "rbac_role"},
 	}
 	st.groups = append(st.groups, &client.RBACGroup{ID: s.nextID("rbac_group"), CreatedAt: now(), UpdatedAt: now(),
-		Name: "SCIM Synced", Roles: []string{st.roles[0].ID}, SourceType: "scim", Type: "rbac_group"})
+		Name: "SCIM Synced", RoleIDs: []string{st.roles[0].ID}, Roles: []string{st.roles[0].ID}, SourceType: "scim", Type: "rbac_group"})
 	s.seedIncreaseRequests()
 	s.seedAgents()
 }

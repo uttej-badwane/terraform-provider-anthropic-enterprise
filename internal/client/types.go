@@ -483,13 +483,31 @@ type ExternalKeyValidation struct {
 
 // RBACGroup is a Claude Enterprise group.
 type RBACGroup struct {
-	ID         string   `json:"id"`
-	CreatedAt  string   `json:"created_at"`
-	Name       string   `json:"name"`
+	ID        string `json:"id"`
+	CreatedAt string `json:"created_at"`
+	Name      string `json:"name"`
+	// RoleIDs is the current field. Roles is its deprecated predecessor: the
+	// API reference marks it "Use role_ids instead; roles always has the same
+	// value", and it is still decoded only so that a response from before
+	// role_ids existed keeps working. Read through EffectiveRoleIDs.
+	RoleIDs    []string `json:"role_ids"`
 	Roles      []string `json:"roles"`
 	SourceType string   `json:"source_type"`
 	Type       string   `json:"type"`
 	UpdatedAt  string   `json:"updated_at"`
+}
+
+// EffectiveRoleIDs returns role_ids, falling back to the deprecated roles.
+//
+// nil and empty mean different things and are both preserved: the API sends
+// null when role data is temporarily unavailable and [] when the group has no
+// roles. Falling back only on nil means an explicit empty role_ids is never
+// overridden by a stale roles value.
+func (g RBACGroup) EffectiveRoleIDs() []string {
+	if g.RoleIDs != nil {
+		return g.RoleIDs
+	}
+	return g.Roles
 }
 
 // RBACGroupWrite is the create/update body.
@@ -501,9 +519,22 @@ type RBACGroupWrite struct {
 type RBACGroupMember struct {
 	CreatedAt string `json:"created_at"`
 	Email     string `json:"email"`
-	GroupID   string `json:"group_id"`
-	Type      string `json:"type"`
-	UserID    string `json:"user_id"`
+	// RBACGroupID is the current field. GroupID is deprecated ("Use
+	// rbac_group_id instead; group_id always has the same value") and decoded
+	// only as a fallback. Read through EffectiveGroupID.
+	RBACGroupID string `json:"rbac_group_id"`
+	GroupID     string `json:"group_id"`
+	Type        string `json:"type"`
+	UserID      string `json:"user_id"`
+}
+
+// EffectiveGroupID returns rbac_group_id, falling back to the deprecated
+// group_id.
+func (m RBACGroupMember) EffectiveGroupID() string {
+	if m.RBACGroupID != "" {
+		return m.RBACGroupID
+	}
+	return m.GroupID
 }
 
 // RBACGroupMemberAdd is the add body.
