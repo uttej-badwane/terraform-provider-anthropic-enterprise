@@ -1,0 +1,94 @@
+# Checks the fields this provider decodes against Anthropic's API reference,
+# weekly, and keeps one issue open for as long as there is something to act on.
+#
+# A deprecated field is still sent until the day it is not, and on that day a
+# client still reading it gets back an empty value: a diff for every object in
+# state, or for resources whose id includes it, a replacement. This finds such
+# fields while the old name still works. See CONTRIBUTING.md, "Keeping up with
+# API changes".
+#
+# It is deliberately not a pull request check. It depends on Anthropic's
+# documentation site, and a slow or unreachable docs page should not block a
+# merge. The offline half, that the manifest still matches the client, runs in
+# `make test` on every pull request.
+name: API drift
+
+on:
+  schedule:
+    # Mondays, early enough to read before the week's work starts.
+    - cron: '17 7 * * 1'
+  workflow_dispatch:
+
+# The default token can only read. The one job below asks for what it needs.
+permissions:
+  contents: read
+
+concurrency:
+  group: api-drift
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: Compare the client with the API reference
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # Opening, updating and closing the tracking issue.
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      # Built rather than run with `go run`: go run reports a non-zero exit as
+      # its own status 1, which would make every run with findings look like a
+      # broken check.
+      - name: Build the checker
+        run: go build -o "$RUNNER_TEMP/apidrift" ./internal/apidrift/cmd/apidrift
+
+      # Exit 0: nothing to act on. 3: findings or release notes to read.
+      # 1: the check could not run, for example a manifest page that no longer
+      # exists. That fails the workflow, which notifies the maintainer, instead
+      # of closing the issue on the strength of a check that did not happen.
+      - name: Run the check
+        id: check
+        run: |
+          set +e
+          "$RUNNER_TEMP/apidrift" -report "$RUNNER_TEMP/report.md"
+          code=$?
+          set -e
+          echo "code=${code}" >>"$GITHUB_OUTPUT"
+          if [ "$code" -ne 0 ] && [ "$code" -ne 3 ]; then
+            echo "::error::The API drift check could not run (exit ${code}); see the log above."
+            exit 1
+          fi
+
+      - name: Open, update or close the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CODE: ${{ steps.check.outputs.code }}
+          REPORT: ${{ runner.temp }}/report.md
+        run: |
+          set -euo pipefail
+          label=api-drift
+          gh label create "$label" --color D93F0B \
+            --description "The API reference changed in a way this provider should respond to" 2>/dev/null || true
+
+          existing="$(gh issue list --label "$label" --state open --json number --jq '.[0].number // empty')"
+
+          if [ "$CODE" -eq 3 ]; then
+            if [ -n "$existing" ]; then
+              gh issue edit "$existing" --body-file "$REPORT"
+              gh issue comment "$existing" --body "Refreshed by the weekly run on $(date -u +%Y-%m-%d)."
+            else
+              gh issue create --title "API reference changes to review" --label "$label" --body-file "$REPORT"
+            fi
+          elif [ -n "$existing" ]; then
+            gh issue close "$existing" --comment "The run on $(date -u +%Y-%m-%d) found nothing left to act on."
+          fi
