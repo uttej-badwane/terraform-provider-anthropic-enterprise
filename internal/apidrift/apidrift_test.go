@@ -44,6 +44,51 @@ const externalKeysPage = "## Returns\n\n" +
 	"    **Deprecated**\n\n" +
 	"    IAM role ARN. Deprecated; this field is ignored.\n"
 
+// Trimmed from the live agents reference: a model id enum where two values
+// are retiring. The field itself is not deprecated.
+const agentModelPage = "## Returns\n\n" +
+	"- `model: BetaManagedAgentsModelConfig`\n\n" +
+	"  - `id: BetaManagedAgentsModel`\n\n" +
+	"    The model that will power your agent.\n\n" +
+	"    - `\"claude-opus-4-5\"`\n\n" +
+	"      Powerful intelligence for long-running agents and coding\n\n" +
+	"    - `\"claude-sonnet-4-5\"`\n\n" +
+	"      **Deprecated**: Will reach end-of-life on November 30, 2026. Please migrate to claude-sonnet-5-5.\n\n" +
+	"      High-performance model for agents and coding\n\n" +
+	"  - `speed: optional \"standard\" or \"fast\"`\n\n" +
+	"- `name: string`\n\n" +
+	"  **Deprecated**: Use `display_name` instead.\n"
+
+// Trimmed from the live analytics usage reference, which names the
+// replacement without the word "instead".
+const analyticsActorPage = "## Returns\n\n" +
+	"- `data: array of BetaAnalyticsUserUsage`\n\n" +
+	"  - `actor: BetaAnalyticsUserActor`\n\n" +
+	"    - `user_id: string`\n\n" +
+	"    - `email: string or null`\n\n" +
+	"      **Deprecated**\n\n" +
+	"      Deprecated: use `email_address`, which carries the same value.\n\n" +
+	"  - `cache_creation: BetaCacheCreation`\n"
+
+func TestParseDeprecationsIgnoresRetiredEnumValues(t *testing.T) {
+	t.Parallel()
+	got := ParseDeprecations("agents", agentModelPage)
+	if len(got) != 1 || !slices.Equal(got[0].Path, []string{"name"}) {
+		t.Fatalf("got %+v, want only name: a retiring model value does not deprecate model.id", got)
+	}
+}
+
+func TestParseDeprecationsReplacementWithoutInstead(t *testing.T) {
+	t.Parallel()
+	got := ParseDeprecations("analytics", analyticsActorPage)
+	if len(got) != 1 {
+		t.Fatalf("got %d deprecations, want 1: %+v", len(got), got)
+	}
+	if !slices.Equal(got[0].Path, []string{"actor", "email"}) || !slices.Equal(got[0].Replacement, []string{"email_address"}) {
+		t.Errorf("got path %v replacement %v, want [actor email] -> [email_address]", got[0].Path, got[0].Replacement)
+	}
+}
+
 func TestParseDeprecationsReadsOnlyTheResponse(t *testing.T) {
 	t.Parallel()
 	got := ParseDeprecations("api_keys", apiKeysPage)
@@ -242,18 +287,19 @@ func TestKnownDeprecationsStayFixed(t *testing.T) {
 		t.Fatal(err)
 	}
 	deps := map[string][]Deprecation{
-		"beta/organization/rbac_groups/retrieve":        {{Path: []string{"roles"}, Replacement: []string{"role_ids"}}},
-		"beta/organization/rbac_groups/members/list":    {{Path: []string{"group_id"}, Replacement: []string{"rbac_group_id"}}},
-		"beta/organization/rate_limits/list":            {{Path: []string{"group_type"}, Replacement: []string{"group", "type"}}},
-		"beta/organization/workspaces/rate_limits/list": {{Path: []string{"group_type"}, Replacement: []string{"group", "type"}}},
-		"beta/organization/api_keys/retrieve":           {{Path: []string{"workspace_id"}, Replacement: []string{"scope"}}},
-		"beta/organization/external_keys/retrieve":      {{Path: []string{"provider_config", "role_arn"}}},
+		"beta/organization/rbac_groups/retrieve":         {{Path: []string{"roles"}, Replacement: []string{"role_ids"}}},
+		"beta/organization/rbac_groups/members/list":     {{Path: []string{"group_id"}, Replacement: []string{"rbac_group_id"}}},
+		"beta/organization/rate_limits/list":             {{Path: []string{"group_type"}, Replacement: []string{"group", "type"}}},
+		"beta/organization/workspaces/rate_limits/list":  {{Path: []string{"group_type"}, Replacement: []string{"group", "type"}}},
+		"beta/organization/api_keys/retrieve":            {{Path: []string{"workspace_id"}, Replacement: []string{"scope"}}},
+		"beta/organization/external_keys/retrieve":       {{Path: []string{"provider_config", "role_arn"}}},
+		"beta/organization/analytics/usage/list_by_user": {{Path: []string{"actor", "email"}, Replacement: []string{"email_address"}}},
 	}
 	r := Check(m, types, deps)
 	for _, f := range r.Findings {
 		t.Errorf("%s.%s is decoded without its replacement %q", f.Type, f.Field, f.Replacement)
 	}
-	if len(r.Fallbacks) != 5 {
-		t.Errorf("got %d fallbacks, want 5", len(r.Fallbacks))
+	if len(r.Fallbacks) != 6 {
+		t.Errorf("got %d fallbacks, want 6", len(r.Fallbacks))
 	}
 }

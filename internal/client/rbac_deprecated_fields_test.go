@@ -126,3 +126,34 @@ func TestRateLimitPrefersGroupType(t *testing.T) {
 		})
 	}
 }
+
+// Analytics actors: email -> email_address, "which carries the same value".
+func TestAnalyticsActorPrefersEmailAddress(t *testing.T) {
+	t.Parallel()
+
+	cases := map[string]struct {
+		body string
+		want *string
+	}{
+		"deprecated field removed":           {body: `{"user_id":"u","email_address":"a@example.com"}`, want: ptrTo("a@example.com")},
+		"only the deprecated field":          {body: `{"user_id":"u","email":"a@example.com"}`, want: ptrTo("a@example.com")},
+		"both present, as the API sends now": {body: `{"user_id":"u","email_address":"a@example.com","email":"a@example.com"}`, want: ptrTo("a@example.com")},
+		"both null stays null":               {body: `{"user_id":"u","email_address":null,"email":null}`, want: nil},
+	}
+
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			var a client.AnalyticsActor
+			if err := json.Unmarshal([]byte(tc.body), &a); err != nil {
+				t.Fatalf("decode: %v", err)
+			}
+			got := a.EffectiveEmail()
+			if (got == nil) != (tc.want == nil) || (got != nil && *got != *tc.want) {
+				t.Fatalf("EffectiveEmail() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func ptrTo(s string) *string { return &s }

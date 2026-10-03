@@ -63,7 +63,7 @@ func actorAttrs(m map[string]schema.Attribute) map[string]schema.Attribute {
 
 func actorValues(m map[string]attr.Value, a client.AnalyticsActor, start, end *string) map[string]attr.Value {
 	m["user_id"] = types.StringValue(a.UserID)
-	m["email"] = stringFromPtr(a.Email)
+	m["email"] = stringFromPtr(a.EffectiveEmail())
 	m["name"] = stringFromPtr(a.Name)
 	m["deleted"] = types.BoolValue(a.Deleted)
 	m["starting_at"] = stringFromPtr(start)
