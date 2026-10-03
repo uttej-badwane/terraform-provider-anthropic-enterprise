@@ -1,0 +1,9 @@
+{
+  "name": "@semantic-release/npm",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Stand-in for @semantic-release/npm, which this repository never runs. See README.md here.",
+  "type": "module",
+  "main": "index.js",
+  "license": "MPL-2.0"
+}
