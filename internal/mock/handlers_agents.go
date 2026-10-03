@@ -27,6 +27,7 @@ type agentStore struct {
 	credentials   []*storedCredential
 	deployments   []*client.Deployment
 	memoryStores  []*client.MemoryStore
+	memories      []*client.Memory
 	skills        []*client.Skill
 	skillVersions []*client.SkillVersion
 }
@@ -135,6 +136,11 @@ func (s *Server) agentRoutes() {
 	s.handle("POST /v1/memory_stores/{id}", s.updateMemoryStore)
 	s.handle("DELETE /v1/memory_stores/{id}", s.deleteMemoryStore)
 	s.handle("POST /v1/memory_stores/{id}/archive", s.archiveMemoryStore)
+	s.handle("GET /v1/memory_stores/{id}/memories", s.listMemories)
+	s.handle("POST /v1/memory_stores/{id}/memories", s.createMemory)
+	s.handle("GET /v1/memory_stores/{id}/memories/{mem}", s.getMemory)
+	s.handle("POST /v1/memory_stores/{id}/memories/{mem}", s.updateMemory)
+	s.handle("DELETE /v1/memory_stores/{id}/memories/{mem}", s.deleteMemory)
 
 	s.handle("GET /v1/skills", s.listSkills)
 	s.handle("POST /v1/skills", s.createSkill)
@@ -1650,6 +1656,7 @@ func (s *Server) deleteMemoryStore(w http.ResponseWriter, r *http.Request) {
 	for i, m := range s.store.agentsStore.memoryStores {
 		if m.ID == id {
 			s.store.agentsStore.memoryStores = slices.Delete(s.store.agentsStore.memoryStores, i, i+1)
+			s.store.agentsStore.memories = slices.DeleteFunc(s.store.agentsStore.memories, func(mem *client.Memory) bool { return mem.MemoryStoreID == id })
 			deleted(w, id, "memory_store_deleted")
 			return
 		}
