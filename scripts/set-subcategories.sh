@@ -22,7 +22,7 @@ subcategory_for() {
       echo "Skills" ;;
     agent | agents | agent_versions | environment | environments | vault | vaults | \
     vault_credential | vault_credentials | deployment | deployments | deployment_run | deployment_runs | \
-    memory_store | memory_stores)
+    memory_store | memory_stores | memory | memories)
       echo "Managed Agents" ;;
     service_account | service_accounts | workspace_service_account | workspace_service_accounts | federation_*)
       echo "Service Accounts and Federation" ;;

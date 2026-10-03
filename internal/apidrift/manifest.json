@@ -197,6 +197,10 @@
       "type": "MemoryStore"
     },
     {
+      "page": "beta/memory_stores/memories/retrieve",
+      "type": "Memory"
+    },
+    {
       "page": "beta/skills/retrieve",
       "type": "Skill"
     },

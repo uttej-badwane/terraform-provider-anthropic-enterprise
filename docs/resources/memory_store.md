@@ -3,14 +3,14 @@
 page_title: "anthropic_memory_store Resource - Anthropic Enterprise"
 subcategory: "Managed Agents"
 description: |-
-  Manages a Managed Agents memory store: a persistent namespace agents read and write across sessions (mounted at /mnt/memory/<slug>/). Names are not unique. The memories themselves are agent-written runtime data and are not managed here.
+  Manages a Managed Agents memory store: a persistent namespace agents read and write across sessions (mounted at /mnt/memory/<slug>/). Names are not unique. To seed it with documents, use anthropic_memory.
   terraform destroy deletes the store and its memories. Set delete_on_destroy = false to archive it instead. The API uses a separate beta header for memory stores; the provider sends it automatically.
   ~> The Managed Agents API is in beta. This resource needs api_key (a regular workspace API key, not an Admin key) and workspace_id when the key can reach more than one workspace.
 ---
 
 # anthropic_memory_store (Resource)
 
-Manages a Managed Agents memory store: a persistent namespace agents read and write across sessions (mounted at `/mnt/memory/<slug>/`). Names are not unique. The memories themselves are agent-written runtime data and are not managed here.
+Manages a Managed Agents memory store: a persistent namespace agents read and write across sessions (mounted at `/mnt/memory/<slug>/`). Names are not unique. To seed it with documents, use `anthropic_memory`.
 
 `terraform destroy` deletes the store and its memories. Set `delete_on_destroy = false` to archive it instead. The API uses a separate beta header for memory stores; the provider sends it automatically.
 

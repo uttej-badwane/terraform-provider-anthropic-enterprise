@@ -88,16 +88,18 @@ Set only what you use. No resource stores secret material in Terraform state.
 | `anthropic_vault_credential` | api_key | delete (or archive); secrets are write-only and never stored in state |
 | `anthropic_deployment` | api_key | archive (no delete endpoint); `paused` drives pause/unpause |
 | `anthropic_memory_store` | api_key | delete (or archive) |
+| `anthropic_memory` | api_key | delete; updates carry the last-read content hash, so an agent write is never overwritten unseen |
 | `anthropic_skill` | api_key | delete; local content hash drives new versions |
 
-Data sources (68):
+Data sources (74):
 
 * Console: `anthropic_organization`, `anthropic_user`, `anthropic_users`, `anthropic_invite`, `anthropic_invites`, `anthropic_workspace`, `anthropic_workspaces`, `anthropic_workspace_member`, `anthropic_workspace_members`, `anthropic_api_key`, `anthropic_api_keys`, `anthropic_rate_limits`, `anthropic_workspace_rate_limits`, `anthropic_external_key`, `anthropic_external_keys`, `anthropic_compliance_settings`
 * OAuth: `anthropic_service_account`, `anthropic_service_accounts`, `anthropic_workspace_service_accounts`, `anthropic_federation_issuer`, `anthropic_federation_issuers`, `anthropic_federation_rule`, `anthropic_federation_rules`, `anthropic_federation_rule_workspaces`
 * Claude Enterprise: `anthropic_rbac_group`, `anthropic_rbac_groups`, `anthropic_rbac_group_members`, `anthropic_rbac_role`, `anthropic_rbac_roles`, `anthropic_spend_limit`, `anthropic_spend_limits`, `anthropic_spend_limit_increase_request`, `anthropic_spend_limit_increase_requests`
 * Reports (point-in-time, re-read every plan): `anthropic_usage_report`, `anthropic_cost_report`, `anthropic_claude_code_usage_report`
 * Enterprise analytics (`analytics_api_key`): `anthropic_analytics_summaries`, `anthropic_analytics_users`, `anthropic_analytics_skills`, `anthropic_analytics_connectors`, `anthropic_analytics_plugins`, `anthropic_analytics_artifacts`, `anthropic_analytics_usage_report`, `anthropic_analytics_cost_report`, `anthropic_analytics_user_usage_report`, `anthropic_analytics_user_cost_report`
-* Managed Agents (`api_key`): `anthropic_agent`, `anthropic_agents`, `anthropic_agent_versions`, `anthropic_environment`, `anthropic_environments`, `anthropic_vault`, `anthropic_vaults`, `anthropic_vault_credentials`, `anthropic_deployment`, `anthropic_deployments`, `anthropic_memory_store`, `anthropic_memory_stores`, `anthropic_skill`, `anthropic_skills`, `anthropic_skill_versions`
+* Managed Agents (`api_key`): `anthropic_agent`, `anthropic_agents`, `anthropic_agent_versions`, `anthropic_environment`, `anthropic_environments`, `anthropic_vault`, `anthropic_vaults`, `anthropic_vault_credentials`, `anthropic_deployment`, `anthropic_deployments`, `anthropic_deployment_run`, `anthropic_deployment_runs`, `anthropic_memory_store`, `anthropic_memory_stores`, `anthropic_memories`, `anthropic_skill`, `anthropic_skills`, `anthropic_skill_versions`
+* Models (`api_key`): `anthropic_models`, `anthropic_model`, `anthropic_count_tokens`
 * Compliance directory: `anthropic_compliance_organizations`, `anthropic_compliance_organization_users`, `anthropic_compliance_roles`, `anthropic_compliance_role`, `anthropic_compliance_groups`, `anthropic_compliance_group_members`, `anthropic_compliance_effective_settings`
 
 Not covered, because the API has no write endpoint: rate-limit overrides, organization or seat-tier spend caps, custom roles and role-to-group attachment, SCIM groups, admin or owner org roles, Claude Code settings, SSO, IP allowlists, retention, invite domains, and creation of Admin, Compliance or Analytics keys. Compliance Activity Feed, chat and file content endpoints are event streams and are also out of scope. Deprecated `tunnels` endpoints are skipped.

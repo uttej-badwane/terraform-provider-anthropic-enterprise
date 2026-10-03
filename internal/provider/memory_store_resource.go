@@ -49,8 +49,7 @@ func (r *memoryStoreResource) Metadata(_ context.Context, req resource.MetadataR
 func (r *memoryStoreResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		MarkdownDescription: "Manages a Managed Agents memory store: a persistent namespace agents read and write across sessions " +
-			"(mounted at `/mnt/memory/<slug>/`). Names are not unique. The memories themselves are agent-written runtime data " +
-			"and are not managed here.\n\n`terraform destroy` deletes the store and its memories. Set `delete_on_destroy = false` " +
+			"(mounted at `/mnt/memory/<slug>/`). Names are not unique. To seed it with documents, use `anthropic_memory`.\n\n`terraform destroy` deletes the store and its memories. Set `delete_on_destroy = false` " +
 			"to archive it instead. The API uses a separate beta header for memory stores; the provider sends it automatically." + managedAgentsNote,
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{

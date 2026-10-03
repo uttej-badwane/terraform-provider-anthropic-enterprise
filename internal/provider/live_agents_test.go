@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
@@ -161,5 +162,51 @@ data "anthropic_skills"        "anthropic" { source = "anthropic" }
 				statecheck.ExpectKnownValue("data.anthropic_skills.anthropic", tfjsonpath.New("skills"), knownvalue.ListPartial(map[int]knownvalue.Check{})),
 			},
 		}},
+	})
+}
+
+// TestAccLiveMemory checks anthropic_memory against the live API: create,
+// a byte-exact round trip, an in-place content change and rename, import, and
+// the list data source. The store and memory are destroyed at the end.
+func TestAccLiveMemory(t *testing.T) {
+	skipUnlessLiveAgents(t)
+	store := "tf-acc-memory-" + acctest.RandString(6)
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
+		Steps: []resource.TestStep{
+			{
+				Config: memoryConfig(store, "/style/go.md", "Use gofmt.\n"),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue("anthropic_memory.test", tfjsonpath.New("content_size_bytes"), knownvalue.Int64Exact(11)),
+					statecheck.ExpectKnownValue("data.anthropic_memories.all", tfjsonpath.New("memories").AtSliceIndex(0).AtMapKey("path"), knownvalue.StringExact("/style/go.md")),
+				},
+			},
+			{Config: memoryConfig(store, "/style/go.md", "Use gofmt.\n"), PlanOnly: true},
+			{
+				Config: memoryConfig(store, "/conventions/go.md", "Use gofmt and go vet.\n"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction("anthropic_memory.test", plancheck.ResourceActionUpdate)},
+				},
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue("anthropic_memory.test", tfjsonpath.New("path"), knownvalue.StringExact("/conventions/go.md")),
+					statecheck.ExpectKnownValue("anthropic_memory.test", tfjsonpath.New("content_size_bytes"), knownvalue.Int64Exact(22)),
+				},
+			},
+			{
+				ResourceName:      "anthropic_memory.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs := s.RootModule().Resources["anthropic_memory.test"]
+					return rs.Primary.Attributes["memory_store_id"] + "/" + rs.Primary.ID, nil
+				},
+			},
+			{
+				Config: memoryConfig(store, "/conventions/go.md", ""),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue("anthropic_memory.test", tfjsonpath.New("content_size_bytes"), knownvalue.Int64Exact(0)),
+				},
+			},
+		},
 	})
 }

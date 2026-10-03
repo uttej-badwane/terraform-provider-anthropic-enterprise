@@ -331,6 +331,43 @@ type MemoryStoreUpdate struct {
 	Metadata    MetadataPatch `json:"metadata,omitempty"`
 }
 
+// Memory is one text document at a path inside a memory store. Content is
+// nil unless the response was requested with view=full; the hash and size are
+// always present.
+type Memory struct {
+	ID               string  `json:"id"`
+	Type             string  `json:"type"`
+	MemoryStoreID    string  `json:"memory_store_id"`
+	MemoryVersionID  string  `json:"memory_version_id"`
+	Path             string  `json:"path"`
+	Content          *string `json:"content"`
+	ContentSHA256    string  `json:"content_sha256"`
+	ContentSizeBytes int64   `json:"content_size_bytes"`
+	CreatedAt        string  `json:"created_at"`
+	UpdatedAt        string  `json:"updated_at"`
+}
+
+// MemoryCreate is the create body. Content is always sent: the API requires it
+// and takes "" for an empty memory.
+type MemoryCreate struct {
+	Path    string `json:"path"`
+	Content string `json:"content"`
+}
+
+// MemoryUpdate is the update body. A nil field is left unchanged.
+type MemoryUpdate struct {
+	Path         *string             `json:"path,omitempty"`
+	Content      *string             `json:"content,omitempty"`
+	Precondition *MemoryPrecondition `json:"precondition,omitempty"`
+}
+
+// MemoryPrecondition makes an update apply only while the stored content still
+// hashes to ContentSHA256; otherwise the API answers 409.
+type MemoryPrecondition struct {
+	Type          string `json:"type"`
+	ContentSHA256 string `json:"content_sha256"`
+}
+
 // --- skills ----------------------------------------------------------------------------
 
 // Skill is an uploaded skill.
