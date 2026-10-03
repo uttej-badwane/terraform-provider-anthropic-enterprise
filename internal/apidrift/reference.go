@@ -34,8 +34,13 @@ var (
 	// "- `BetaSomething object`" introduces one variant of a union. It is a
 	// container, not a field, so it contributes no path segment.
 	variantLine = regexp.MustCompile("^(\\s*)- `[^`:]+ object`")
-	// "Use `group.type` instead", in either case.
-	useInstead = regexp.MustCompile("(?i)use `([a-z0-9_.]+)` instead")
+	// "- `\"claude-sonnet-4-5\"`" is one allowed value of an enum. A
+	// deprecation under it retires that value, not the field, so it is not a
+	// finding: the field keeps working with the other values.
+	valueLine = regexp.MustCompile("^(\\s*)- `\"")
+	// "Use `group.type` instead" or "use `email_address`, which carries the
+	// same value", in either case.
+	useInstead = regexp.MustCompile("(?i)\\buse `([a-z0-9_.]+)`")
 )
 
 type frame struct {
@@ -84,6 +89,11 @@ func ParseDeprecations(page, markdown string) []Deprecation {
 			continue
 		}
 		if variantLine.MatchString(l) {
+			continue
+		}
+		if valueLine.MatchString(l) {
+			// Until the next field, any marker belongs to this value.
+			lastMarked = true
 			continue
 		}
 		if !strings.Contains(l, "**Deprecated**") || last == nil || lastMarked {

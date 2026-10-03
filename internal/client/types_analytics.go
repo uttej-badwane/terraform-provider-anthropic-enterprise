@@ -261,11 +261,23 @@ type AnalyticsCostBucket struct {
 
 // AnalyticsActor is the user on per-user usage/cost rows.
 type AnalyticsActor struct {
-	Type    string  `json:"type"`
-	UserID  string  `json:"user_id"`
-	Email   *string `json:"email"`
-	Name    *string `json:"name"`
-	Deleted bool    `json:"deleted"`
+	Type   string `json:"type"`
+	UserID string `json:"user_id"`
+	// EmailAddress is the current field. Email is its deprecated predecessor:
+	// the API reference marks it "use email_address, which carries the same
+	// value". Read through EffectiveEmail.
+	EmailAddress *string `json:"email_address"`
+	Email        *string `json:"email"`
+	Name         *string `json:"name"`
+	Deleted      bool    `json:"deleted"`
+}
+
+// EffectiveEmail returns email_address, falling back to the deprecated email.
+func (a AnalyticsActor) EffectiveEmail() *string {
+	if a.EmailAddress != nil {
+		return a.EmailAddress
+	}
+	return a.Email
 }
 
 // AnalyticsUserUsageRow is one row of /analytics/user_usage_report.

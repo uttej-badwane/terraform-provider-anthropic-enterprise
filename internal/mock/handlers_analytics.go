@@ -338,7 +338,7 @@ func (s *Server) analyticsUserUsage(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		n := int64(len(s.store.users) - i)
-		row := client.AnalyticsUserUsageRow{Actor: client.AnalyticsActor{Type: "user_actor", UserID: u.ID, Email: ptr(u.Email), Name: ptr(u.Name)}}
+		row := client.AnalyticsUserUsageRow{Actor: client.AnalyticsActor{Type: "user_actor", UserID: u.ID, EmailAddress: ptr(u.Email), Email: ptr(u.Email), Name: ptr(u.Name)}}
 		row.AnalyticsDims = dims(q["group_by[]"], nil)
 		row.UncachedInputTokens, row.OutputTokens, row.CacheReadInputTokens, row.Requests = 1000*n, 200*n, 300*n, ptr(10*n)
 		row.TotalTokens = row.UncachedInputTokens + row.OutputTokens + row.CacheReadInputTokens
@@ -367,7 +367,7 @@ func (s *Server) analyticsUserCost(w http.ResponseWriter, r *http.Request) {
 		if len(q["user_ids[]"]) > 0 && !slices.Contains(q["user_ids[]"], u.ID) {
 			continue
 		}
-		row := client.AnalyticsUserCostRow{Actor: client.AnalyticsActor{Type: "user_actor", UserID: u.ID, Email: ptr(u.Email), Name: ptr(u.Name)}}
+		row := client.AnalyticsUserCostRow{Actor: client.AnalyticsActor{Type: "user_actor", UserID: u.ID, EmailAddress: ptr(u.Email), Email: ptr(u.Email), Name: ptr(u.Name)}}
 		row.AnalyticsDims = dims(q["group_by[]"], nil)
 		row.Amount, row.ListAmount, row.Currency, row.Requests = "1000.500000", "1250.000000", "USD", ptr(int64(5*(i+1)))
 		rows = append(rows, row)
