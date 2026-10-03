@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 	"net/url"
 	"strconv"
 )
@@ -335,6 +336,58 @@ func (c *Client) ArchiveMemoryStore(ctx context.Context, id string) (*MemoryStor
 		return nil, err
 	}
 	return &out, nil
+}
+
+// --- memories ----------------------------------------------------------------------
+
+func memoryPath(storeID, memoryID string) string {
+	return "/v1/memory_stores/" + url.PathEscape(storeID) + "/memories/" + url.PathEscape(memoryID)
+}
+
+// fullView asks for content in the response. Create and update default to the
+// basic view, which returns content as null.
+func fullView() url.Values { return url.Values{"view": {"full"}} }
+
+// ListMemories lists the memories in a store without their content, optionally
+// limited to a path prefix ending in "/".
+func (c *Client) ListMemories(ctx context.Context, storeID, pathPrefix string) ([]Memory, error) {
+	q := url.Values{}
+	if pathPrefix != "" {
+		q.Set("path_prefix", pathPrefix)
+	}
+	return listToken[Memory](ctx, c, CredAPIKey, "/v1/memory_stores/"+url.PathEscape(storeID)+"/memories", q, betaMemory)
+}
+
+// CreateMemory creates a memory and returns it with its content.
+func (c *Client) CreateMemory(ctx context.Context, storeID string, in MemoryCreate) (*Memory, error) {
+	var out Memory
+	if err := c.do(context.WithValue(ctx, ctxKeyCreate{}, true), CredAPIKey, http.MethodPost, "/v1/memory_stores/"+url.PathEscape(storeID)+"/memories", fullView(), in, &out, betaMemory); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// GetMemory returns one memory with its content.
+func (c *Client) GetMemory(ctx context.Context, storeID, memoryID string) (*Memory, error) {
+	var out Memory
+	if err := c.get(ctx, CredAPIKey, memoryPath(storeID, memoryID), fullView(), &out, betaMemory); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// UpdateMemory renames a memory or replaces its content.
+func (c *Client) UpdateMemory(ctx context.Context, storeID, memoryID string, in MemoryUpdate) (*Memory, error) {
+	var out Memory
+	if err := c.do(ctx, CredAPIKey, http.MethodPost, memoryPath(storeID, memoryID), fullView(), in, &out, betaMemory); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// DeleteMemory deletes a memory. Its version history stays listable.
+func (c *Client) DeleteMemory(ctx context.Context, storeID, memoryID string) error {
+	return c.delete(ctx, CredAPIKey, memoryPath(storeID, memoryID), betaMemory)
 }
 
 // --- skills ------------------------------------------------------------------------------

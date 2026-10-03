@@ -248,3 +248,65 @@ func TestDeploymentAndSkills(t *testing.T) {
 		t.Fatalf("deleted skill must 404: %v", err)
 	}
 }
+
+func TestMemoryLifecycle(t *testing.T) {
+	srv, api, _ := agentClients(t)
+	ctx := context.Background()
+
+	store, err := api.CreateMemoryStore(ctx, client.MemoryStoreCreate{Name: "notes"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m, err := api.CreateMemory(ctx, store.ID, client.MemoryCreate{Path: "/a.md", Content: "one"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Create defaults to the basic view; the client asks for full.
+	if m.Content == nil || *m.Content != "one" || m.ContentSizeBytes != 3 || len(m.ContentSHA256) != 64 {
+		t.Fatalf("create: %+v", m)
+	}
+	if _, err := api.CreateMemory(ctx, store.ID, client.MemoryCreate{Path: "/a.md", Content: "dup"}); !client.IsConflict(err) {
+		t.Fatalf("duplicate path: want 409, got %v", err)
+	}
+
+	// An agent rewrites it; an update carrying the old hash must be refused.
+	if !srv.RewriteMemory(store.ID, m.ID, "agent wrote this") {
+		t.Fatal("rewrite")
+	}
+	two := "two"
+	_, err = api.UpdateMemory(ctx, store.ID, m.ID, client.MemoryUpdate{
+		Content:      &two,
+		Precondition: &client.MemoryPrecondition{Type: "content_sha256", ContentSHA256: m.ContentSHA256},
+	})
+	if !client.IsConflict(err) {
+		t.Fatalf("stale precondition: want 409, got %v", err)
+	}
+
+	cur, err := api.GetMemory(ctx, store.ID, m.ID)
+	if err != nil || cur.Content == nil || *cur.Content != "agent wrote this" {
+		t.Fatalf("get: %+v %v", cur, err)
+	}
+	renamed := "/b/a.md"
+	upd, err := api.UpdateMemory(ctx, store.ID, m.ID, client.MemoryUpdate{
+		Path: &renamed, Content: &two,
+		Precondition: &client.MemoryPrecondition{Type: "content_sha256", ContentSHA256: cur.ContentSHA256},
+	})
+	if err != nil || upd.Path != renamed || upd.Content == nil || *upd.Content != "two" || upd.ID != m.ID {
+		t.Fatalf("update: %+v %v", upd, err)
+	}
+
+	list, err := api.ListMemories(ctx, store.ID, "/b/")
+	if err != nil || len(list) != 1 || list[0].Content != nil {
+		t.Fatalf("list must omit content: %+v %v", list, err)
+	}
+	if list, _ := api.ListMemories(ctx, store.ID, "/c/"); len(list) != 0 {
+		t.Fatalf("prefix filter: %+v", list)
+	}
+
+	if err := api.DeleteMemory(ctx, store.ID, m.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := api.GetMemory(ctx, store.ID, m.ID); !client.IsNotFound(err) {
+		t.Fatalf("after delete: %v", err)
+	}
+}

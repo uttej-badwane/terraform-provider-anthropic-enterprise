@@ -81,6 +81,36 @@ func TestAccUpdatesDoNotReplace(t *testing.T) {
   description = "after"
 }`, suffix),
 		},
+		"memory_content": {
+			address: "anthropic_memory.test",
+			base: fmt.Sprintf(`resource "anthropic_memory_store" "s" { name = %[1]q }
+resource "anthropic_memory" "test" {
+  memory_store_id = anthropic_memory_store.s.id
+  path            = "/guard.md"
+  content         = "before"
+}`, suffix),
+			updated: fmt.Sprintf(`resource "anthropic_memory_store" "s" { name = %[1]q }
+resource "anthropic_memory" "test" {
+  memory_store_id = anthropic_memory_store.s.id
+  path            = "/guard.md"
+  content         = "after"
+}`, suffix),
+		},
+		"memory_path": {
+			address: "anthropic_memory.test",
+			base: fmt.Sprintf(`resource "anthropic_memory_store" "s" { name = %[1]q }
+resource "anthropic_memory" "test" {
+  memory_store_id = anthropic_memory_store.s.id
+  path            = "/before.md"
+  content         = "same"
+}`, suffix),
+			updated: fmt.Sprintf(`resource "anthropic_memory_store" "s" { name = %[1]q }
+resource "anthropic_memory" "test" {
+  memory_store_id = anthropic_memory_store.s.id
+  path            = "/after.md"
+  content         = "same"
+}`, suffix),
+		},
 		"environment": {
 			address: "anthropic_environment.test",
 			base: fmt.Sprintf(`resource "anthropic_environment" "test" {
