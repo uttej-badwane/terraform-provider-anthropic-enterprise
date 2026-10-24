@@ -13,8 +13,14 @@ on:
   push:
     branches:
       - main
-  # Kept so a release can still be forced by pushing a tag if the automation is
-  # ever unavailable. goreleaser is the same either way.
+  # A merge made with GITHUB_TOKEN does not fire push, so Dependabot's
+  # auto-merges never reach the trigger above. A deps update merged that way
+  # would sit on main unreleased. The daily run picks it up; on any other day
+  # semantic-release finds nothing to release and the job ends there.
+  schedule:
+    - cron: '23 5 * * *'
+  # Kept so a release can still be forced by hand if the automation is ever
+  # unavailable. goreleaser is the same either way.
   workflow_dispatch:
 
 # The default token can only read. The one job that publishes asks for what it

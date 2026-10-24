@@ -17,7 +17,9 @@ or publish step.
 5. The release is published, and the Terraform and OpenTofu registries pick it
    up (see below; they do not do it the same way).
 
-A push carrying no releasable commit is the normal case, not a failure.
+A push carrying no releasable commit is the normal case, not a failure. The
+same holds for the daily scheduled run, which exists to catch merges that did
+not fire a push (see *Dependency updates*).
 
 ## What decides the version
 
@@ -134,6 +136,13 @@ assigned by what the dependency actually is:
 Only the first reaches users. The rest build or publish the provider without
 being part of it, and a new version of the provider whose binary is unchanged is
 noise on a registry that cannot withdraw one.
+
+An auto-merge does not start the Release workflow by itself. The merge is made
+with `GITHUB_TOKEN`, and GitHub does not fire workflows from events that token
+causes, so no push run follows. The Release workflow also runs daily at 05:23
+UTC for this reason: a `deps` update merged this way is released within a day.
+The checks on `main` (Tests, CodeQL) are skipped for these merges too; they
+already passed on the pull request before it merged.
 
 ## Forcing a release
 
