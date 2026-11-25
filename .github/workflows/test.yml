@@ -101,11 +101,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # Same Node major as release.yml. The notes script loads the plugins
+      # directly and never runs the semantic-release CLI, which is where its
+      # Node version check lives. --engine-strict makes the install itself
+      # fail instead: semantic-release 26 needed Node 26, passed here on 22
+      # with only a warning, and failed in the Release workflow after merge.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '26'
       - name: Install the release tooling
-        run: npm ci --no-audit --no-fund
+        run: npm ci --no-audit --no-fund --engine-strict
       - name: Render the release notes
         run: node scripts/check-release-notes.mjs
 

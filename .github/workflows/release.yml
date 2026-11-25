@@ -63,12 +63,13 @@ jobs:
         with:
           go-version: 'stable'
           cache: true
-      # semantic-release 25 requires Node ^22.14.0 || >=24.10.0. '22' resolves
-      # to the newest 22.x, which satisfies it; pinning a lower exact version
-      # here would fail at install time rather than at release time.
+      # semantic-release 26 requires Node >=26.13. '26' resolves to the newest
+      # 26.x, which satisfies it. Keep this and the release-notes job in
+      # test.yml on the same major: that job is what fails a pull request
+      # whose tooling needs a newer Node, before it reaches this workflow.
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '22'
+          node-version: '26'
       - name: Install goreleaser
         uses: goreleaser/goreleaser-action@a4f02ab5355a589de60d917a659ce617ed19b3de # v7.3.0
         with:
@@ -92,7 +93,9 @@ jobs:
           # npm ci installs exactly what package-lock.json pins, verifying each
           # tarball against its integrity hash. npm install would resolve the
           # versions afresh and accept whatever the registry served.
-          npm ci --no-audit --no-fund
+          # --engine-strict turns a package's Node requirement into an install
+          # error rather than a warning.
+          npm ci --no-audit --no-fund --engine-strict
           npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
